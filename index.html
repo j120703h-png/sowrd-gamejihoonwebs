@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>검 강화 - 2026 전설의 대장장이</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Firebase SDK (Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .title-font { font-family: 'Black Han Sans', sans-serif; }
+
+        /* 애니메이션 효과 */
+        .enhancement-success { animation: success-anim 0.5s ease-out; }
+        @keyframes success-anim {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.4); filter: brightness(3); }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+
+        .enhancement-fail { animation: fail-anim 0.3s ease-in-out; }
+        @keyframes fail-anim {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        .hammering { animation: hammer-anim 0.4s infinite; }
+        @keyframes hammer-anim {
+            0%, 100% { transform: rotate(-20deg) translateY(0); }
+            50% { transform: rotate(10deg) translateY(20px); }
+        }
+
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            transition: width linear;
+        }
+
+        .sword-glow { filter: drop-shadow(0 0 15px rgba(99, 102, 241, 0.6)); }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        /* 광고 영역 스타일 */
+        .ad-container {
+            width: 100%;
+            max-width: 320px;
+            min-height: 50px;
+            background-color: rgba(30, 41, 59, 0.5);
+            border: 1px dashed #334155;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="p-4">
+
+    <!-- 메인 게임 UI -->
+    <div id="game-ui" class="bg-slate-900 p-6 rounded-3xl shadow-2xl w-full max-sm:max-w-xs w-full max-w-sm border border-slate-800 my-4 relative transition-all duration-700">
+        
+        <!-- 상단 헤더 -->
+        <div id="header-user" class="flex justify-between items-center mb-6">
+            <div id="user-info-box" class="flex items-center gap-3">
+                <div id="default-avatar" class="w-11 h-11 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xl shadow-lg">👤</div>
+                <img id="user-photo" src="" class="hidden w-11 h-11 rounded-full border-2 border-indigo-500/50 p-0.5 shadow-lg shadow-indigo-500/20">
+                
+                <div>
+                    <p id="user-display-name" class="text-[10px] text-slate-500 font-black tracking-widest uppercase">GUEST PLAYER</p>
+                    <p id="gold-display" class="text-2xl font-black text-yellow-500">100 G</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-1">
+                <button id="login-btn" onclick="handleGoogleLogin()" class="flex items-center gap-2 text-[10px] bg-white text-slate-900 px-3 py-1.5 rounded-lg font-bold hover:bg-slate-200 transition-colors shadow-lg">
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" width="12">
+                    LOGIN
+                </button>
+                <button id="logout-btn" onclick="handleLogout()" class="hidden text-[10px] bg-slate-800/50 hover:bg-red-900/30 px-3 py-1.5 rounded-lg text-slate-500 hover:text-red-400 transition-colors">LOGOUT</button>
+            </div>
+        </div>
+
+        <!-- 강화 카드 -->
+        <div class="bg-black/40 rounded-[2.5rem] p-10 flex flex-col items-center border border-white/5 mb-6 relative overflow-hidden shadow-inner">
+            <div id="hammer-icon" class="absolute top-6 right-12 text-5xl hidden z-10 hammering">🔨</div>
+            <div id="sword-display" class="text-8xl mb-4 select-none sword-glow">🗡️</div>
+            <h2 id="sword-name" class="title-font text-2xl text-slate-100">훈련용 목검</h2>
+            <p id="sword-level" class="font-black text-indigo-400 text-sm tracking-widest">+0 ENHANCED</p>
+            <div id="progress-container" class="absolute bottom-0 left-0 w-full h-1.5 bg-slate-800 hidden">
+                <div id="progress-bar" class="loading-bar"></div>
+            </div>
+        </div>
+
+        <!-- 강화 액션 버튼 -->
+        <div class="space-y-3">
+            <button id="enhance-btn" onclick="handleEnhance()" class="w-full bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all py-5 rounded-2xl font-black text-xl shadow-xl shadow-indigo-500/30 disabled:bg-slate-800 disabled:text-slate-600">
+                ENHANCE (<span id="cost-display">10</span> G)
+            </button>
+            <button id="sell-btn" onclick="handleSell()" class="w-full bg-slate-800/80 hover:bg-slate-700 active:scale-95 transition-all py-3 rounded-xl font-bold text-slate-400 text-sm">
+                SELL CURRENT SWORD (<span id="sell-display">0</span> G)
+            </button>
+        </div>
+
+        <!-- 로그 창 -->
+        <div id="log-window" class="mt-6 h-24 overflow-y-auto bg-black/40 rounded-xl p-4 text-[11px] font-medium border border-white/5 space-y-1.5 custom-scrollbar text-center">
+            <div class="text-slate-600 italic">> Welcome to the Forge.</div>
+            <div id="save-notice" class="text-yellow-500/70 text-[9px] mt-1">로그인하면 데이터가 자동 저장됩니다.</div>
+        </div>
+
+        <!-- 카카오 애드핏 광고 영역 -->
+        <div class="ad-container">
+            <div id="adfit-placeholder" class="text-[10px] text-slate-600 text-center px-4">
+                이곳에 카카오 애드핏 광고가 표시됩니다.<br>(심사 후 코드 삽입 필요)
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 파이어베이스 설정 - 최신 데이터로 업데이트됨
+        const firebaseConfig = {
+            apiKey: "AIzaSyAejpiSvM6DaPCebOlZ-ktrHkDBMmljD4Q",
+            authDomain: "sowrd-game.firebaseapp.com",
+            projectId: "sowrd-game",
+            storageBucket: "sowrd-game.firebasestorage.app",
+            messagingSenderId: "196203629749",
+            appId: "1:196203629749:web:6eaf9d35fc81b5a13602fc"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+        let state = {
+            user: null,
+            gold: 100,
+            level: 0,
+            isWorking: false
+        };
+
+        const swordNames = ["목검", "철검", "강철검", "장검", "기사검", "명검", "영혼검", "용사검", "전설검", "신화검", "절대검"];
+
+        async function handleGoogleLogin() {
+            try { await auth.signInWithPopup(googleProvider); } catch (e) { console.error(e); }
+        }
+
+        function handleLogout() { auth.signOut().then(() => location.reload()); }
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                state.user = user;
+                const userRef = db.collection('users').doc(user.uid);
+                const doc = await userRef.get();
+
+                if (doc.exists) {
+                    state.gold = doc.data().gold;
+                    state.level = doc.data().level;
+                } else {
+                    await userRef.set({ gold: state.gold, level: state.level, email: user.email, name: user.displayName });
+                }
+
+                document.getElementById('login-btn').classList.add('hidden');
+                document.getElementById('logout-btn').classList.remove('hidden');
+                document.getElementById('default-avatar').classList.add('hidden');
+                const photoEl = document.getElementById('user-photo');
+                photoEl.src = user.photoURL;
+                photoEl.classList.remove('hidden');
+                document.getElementById('user-display-name').innerText = user.displayName;
+                document.getElementById('save-notice').innerText = "클라우드 저장 기능 활성화됨 ✓";
+                updateUI();
+            }
+        });
+
+        function updateUI() {
+            document.getElementById('gold-display').innerText = state.gold.toLocaleString() + " G";
+            document.getElementById('sword-level').innerText = `+${state.level} ENHANCED`;
+            document.getElementById('sword-name').innerText = swordNames[Math.min(Math.floor(state.level/5), swordNames.length-1)];
+            document.getElementById('cost-display').innerText = Math.floor(10 * Math.pow(1.45, state.level)).toLocaleString();
+            document.getElementById('sell-display').innerText = state.level === 0 ? "0" : Math.floor(25 * Math.pow(1.55, state.level)).toLocaleString();
+        }
+
+        async function syncData() {
+            if (state.user) {
+                await db.collection('users').doc(state.user.uid).update({ gold: state.gold, level: state.level });
+            }
+        }
+
+        function handleEnhance() {
+            if (state.isWorking) return;
+            const cost = Math.floor(10 * Math.pow(1.45, state.level));
+            if (state.gold < cost) return addLog("골드가 부족합니다.", "text-red-400");
+
+            state.gold -= cost;
+            state.isWorking = true;
+            updateUI();
+
+            document.getElementById('progress-container').classList.remove('hidden');
+            document.getElementById('hammer-icon').classList.remove('hidden');
+            document.getElementById('enhance-btn').disabled = true;
+            const bar = document.getElementById('progress-bar');
+            bar.style.transition = 'none';
+            bar.style.width = '0%';
+            
+            setTimeout(() => {
+                bar.style.transition = 'width 1.0s linear';
+                bar.style.width = '100%';
+            }, 50);
+
+            setTimeout(() => {
+                state.isWorking = false;
+                document.getElementById('enhance-btn').disabled = false;
+                document.getElementById('progress-container').classList.add('hidden');
+                document.getElementById('hammer-icon').classList.add('hidden');
+
+                if (Math.random() * 100 <= Math.max(1, 100 - (state.level * 6.5))) {
+                    state.level++;
+                    addLog(`강화 성공! (+${state.level})`, "text-yellow-400 font-bold");
+                } else {
+                    if (state.level >= 10) state.level = 0;
+                    else if (state.level >= 3) state.level--;
+                    addLog("강화 실패", "text-red-400");
+                }
+                updateUI();
+                syncData();
+            }, 1050);
+        }
+
+        function handleSell() {
+            if (state.level === 0 || state.isWorking) return;
+            state.gold += Math.floor(25 * Math.pow(1.55, state.level));
+            state.level = 0;
+            updateUI();
+            syncData();
+            addLog("검을 판매했습니다.", "text-blue-400");
+        }
+
+        function addLog(msg, color) {
+            const win = document.getElementById('log-window');
+            const div = document.createElement('div');
+            div.className = color;
+            div.innerText = `> ${msg}`;
+            win.prepend(div);
+        }
+    </script>
+</body>
+</html>
