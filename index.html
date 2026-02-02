@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>검 강화 Pro - 2026 전설의 대장장이</title>
     
-    <!-- [1] 사이트 인증 및 자동 광고 스크립트 -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4717072640241610" crossorigin="anonymous"></script>
-
+    <!-- UI 및 기능 라이브러리 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Firebase SDK (Compatibility Mode) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
@@ -30,7 +27,6 @@
         }
 
         .title-font { font-family: 'Black Han Sans', sans-serif; }
-
         .hammering { animation: hammer-anim 0.2s infinite; }
         @keyframes hammer-anim { 
             0%, 100% { transform: rotate(-20deg); } 
@@ -68,14 +64,17 @@
         .tab-btn.active { color: #818cf8; border-bottom: 2px solid #818cf8; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
 
-        /* 광고 컨테이너 스타일 */
         .ad-slot-wrapper {
             width: 100%;
+            margin-top: 1rem;
             margin-bottom: 1rem;
-            min-height: 100px;
+            min-height: 60px; /* 320x50에 최적화 */
             background: rgba(0,0,0,0.2);
-            border-radius: 1rem;
+            border-radius: 0.75rem;
             overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
     </style>
 </head>
@@ -92,17 +91,6 @@
 
         <!-- [대장간 탭] -->
         <div id="view-main">
-            <!-- [2] 대장간 상단 광고 -->
-            <div class="ad-slot-wrapper">
-                <ins class="adsbygoogle"
-                     style="display:block"
-                     data-ad-client="ca-pub-4717072640241610"
-                     data-ad-slot="4991457167"
-                     data-ad-format="auto"
-                     data-full-width-responsive="true"></ins>
-                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-            </div>
-
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-2">
                     <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden ring-1 ring-slate-700">
@@ -120,13 +108,24 @@
                 <button id="login-btn" onclick="handleGoogleLogin()" class="text-[10px] bg-white text-slate-900 px-3 py-1.5 rounded-lg font-black shadow-lg hover:bg-slate-200 transition-all">LOGIN</button>
             </div>
 
+            <!-- 대장간 상단 광고 (DAN-b2FH3ZsMD3Y1zROv) -->
+            <div class="ad-slot-wrapper">
+                <ins class="kakao_ad_area" style="display:none;"
+                    data-ad-unit = "DAN-b2FH3ZsMD3Y1zROv"
+                    data-ad-width = "320"
+                    data-ad-height = "50"></ins>
+                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+            </div>
+
             <!-- [개발자 전용 이벤트 패널] -->
-            <div id="admin-panel" class="hidden bg-red-900/20 border border-red-500/30 p-3 rounded-xl mb-4 space-y-2">
-                <p class="text-[10px] text-red-400 font-black tracking-tighter">DEVELOPER EVENT CONSOLE</p>
+            <div id="admin-panel" class="hidden bg-red-900/20 border border-red-500/30 p-4 rounded-xl mb-4 space-y-3">
+                <p class="text-[10px] text-red-400 font-black tracking-tighter">DEVELOPER CONSOLE</p>
+                <div id="admin-user-list" class="max-h-32 overflow-y-auto space-y-1 mb-2 no-scrollbar border-b border-red-500/20 pb-2">
+                    <p class="text-[9px] text-slate-500">유저 데이터를 불러오는 중...</p>
+                </div>
                 <div class="flex gap-2">
                     <button onclick="adminGiveGold(100000)" class="bg-red-600 text-[10px] px-2 py-1 rounded font-bold">GOLD +10만</button>
                     <button onclick="adminSetLevel(10)" class="bg-red-600 text-[10px] px-2 py-1 rounded font-bold">강화 +10</button>
-                    <button onclick="adminReset()" class="bg-slate-700 text-[10px] px-2 py-1 rounded font-bold">초기화</button>
                 </div>
             </div>
 
@@ -146,25 +145,34 @@
             <button id="enhance-btn" onclick="handleEnhance()" class="btn-grad w-full text-white py-5 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all">
                 강 화 (<span id="cost-display">10</span> G)
             </button>
-            <button onclick="handleSell()" class="w-full mt-4 bg-slate-800 hover:bg-slate-700 text-slate-400 py-3 rounded-xl font-bold text-xs border border-white/5 transition-colors">
+
+            <!-- 강화-판매 사이 광고 (기존 유지) -->
+            <div class="ad-slot-wrapper">
+                <ins class="kakao_ad_area" style="display:none;"
+                    data-ad-unit = "DAN-e7y09q7e6xbt"
+                    data-ad-width = "320"
+                    data-ad-height = "100"></ins>
+                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+            </div>
+
+            <button onclick="handleSell()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 py-3 rounded-xl font-bold text-xs border border-white/5 transition-colors">
                 검 판매 (<span id="sell-display">0</span> G)
             </button>
+
             <div id="status-msg" class="mt-4 text-[10px] text-slate-500 italic text-center h-4">> 대장간에 오신 것을 환영합니다.</div>
         </div>
 
         <!-- [상점 탭] -->
         <div id="view-shop" class="hidden py-4 space-y-4">
-            <!-- [3] 상점 광고 -->
+            <!-- 상점 상단 광고 (DAN-66Pw3NmJZsUEFECb) -->
             <div class="ad-slot-wrapper">
-                <ins class="adsbygoogle"
-                     style="display:block"
-                     data-ad-client="ca-pub-4717072640241610"
-                     data-ad-slot="4417516172"
-                     data-ad-format="auto"
-                     data-full-width-responsive="true"></ins>
-                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                <ins class="kakao_ad_area" style="display:none;"
+                    data-ad-unit = "DAN-66Pw3NmJZsUEFECb"
+                    data-ad-width = "320"
+                    data-ad-height = "50"></ins>
+                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
             </div>
-
+            
             <h3 class="font-black text-sm text-indigo-400 mb-2">숙련도 업그레이드</h3>
             <div class="bg-slate-950 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
                 <div class="flex items-center gap-3">
@@ -193,16 +201,14 @@
         </div>
 
         <!-- [도감 탭] -->
-        <div id="view-book" class="hidden py-4 no-scrollbar max-h-[450px] overflow-y-auto">
-            <!-- [4] 도감 광고 -->
+        <div id="view-book" class="hidden py-4 no-scrollbar max-h-[500px] overflow-y-auto">
+            <!-- 도감 상단 광고 (DAN-m83Hv6kSAXVZxV8Q) -->
             <div class="ad-slot-wrapper">
-                <ins class="adsbygoogle"
-                     style="display:block"
-                     data-ad-client="ca-pub-4717072640241610"
-                     data-ad-slot="9885125961"
-                     data-ad-format="auto"
-                     data-full-width-responsive="true"></ins>
-                <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
+                <ins class="kakao_ad_area" style="display:none;"
+                    data-ad-unit = "DAN-m83Hv6kSAXVZxV8Q"
+                    data-ad-width = "320"
+                    data-ad-height = "50"></ins>
+                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
             </div>
 
             <h3 class="font-black text-sm mb-4 text-indigo-400">나의 통계</h3>
@@ -243,7 +249,8 @@
 
         let state = { 
             user: null, gold: 300, level: 0, maxLevel: 0, totalTries: 0,
-            isWorking: false, upgrades: { luck: 0, speed: 0 }, sellHistory: {}
+            isWorking: false, upgrades: { luck: 0, speed: 0 }, sellHistory: {},
+            displayName: "GUEST"
         };
         const swordNames = ["목검", "철검", "강철검", "장검", "기사검", "명검", "영혼검", "용사검", "전설검", "신화검", "절대검"];
 
@@ -259,7 +266,11 @@
         }
 
         async function handleGoogleLogin() {
-            try { await auth.signInWithPopup(googleProvider); } catch (e) { console.error(e); }
+            try { 
+                await auth.signInWithPopup(googleProvider);
+            } catch (e) { 
+                console.error(e); 
+            }
         }
 
         async function handleLogout() { try { await auth.signOut(); location.reload(); } catch (e) { console.error(e); } }
@@ -267,26 +278,45 @@
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 state.user = user;
-                if (user.email === ADMIN_EMAIL) {
-                    document.getElementById('admin-panel').classList.remove('hidden');
-                }
                 const userRef = db.collection('users').doc(user.uid);
                 const doc = await userRef.get();
+                
                 if (doc.exists) {
                     Object.assign(state, doc.data());
                 } else {
                     const initialData = { 
-                        uid: user.uid, displayName: user.displayName, gold: 300, 
+                        uid: user.uid, displayName: user.displayName || "GUEST", gold: 300, 
                         level: 0, maxLevel: 0, totalTries: 0, upgrades: { luck: 0, speed: 0 }, 
                         sellHistory: {}, lastUpdated: Date.now()
                     };
                     await userRef.set(initialData);
                     Object.assign(state, initialData);
                 }
+
+                if (user.email === ADMIN_EMAIL) {
+                    document.getElementById('admin-panel').classList.remove('hidden');
+                    loadAdminUserList();
+                }
+
                 updateLoginUI(user);
                 updateUI();
             }
         });
+
+        async function loadAdminUserList() {
+            const snapshot = await db.collection('users').get();
+            const listContainer = document.getElementById('admin-user-list');
+            let html = "";
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                html += `<div class="flex justify-between text-[9px] bg-red-500/10 p-1 rounded">
+                    <span class="text-white font-bold">${data.displayName || 'Unnamed'}</span>
+                    <span class="text-yellow-400">${data.gold.toLocaleString()}G</span>
+                    <span class="text-indigo-400">+${data.maxLevel}lv</span>
+                </div>`;
+            });
+            listContainer.innerHTML = html || '<p class="text-[9px] text-slate-500 text-center">유저 데이터가 없습니다.</p>';
+        }
 
         function updateLoginUI(user) {
             document.getElementById('login-btn').classList.add('hidden');
@@ -297,7 +327,7 @@
                 photo.classList.remove('hidden');
                 document.getElementById('default-icon').classList.add('hidden');
             }
-            document.getElementById('user-display-name').innerText = user.displayName || "USER";
+            document.getElementById('user-display-name').innerText = state.displayName || "GUEST";
         }
 
         function updateUI() {
@@ -321,20 +351,8 @@
             document.getElementById('stat-speed').innerText = `속도 단축: -${((state.upgrades.speed || 0) * 0.1).toFixed(1)}초`;
         }
 
-        // [개발자 이벤트 전용 함수들]
-        function adminGiveGold(amt) {
-            state.gold += amt;
-            updateUI(); syncData();
-        }
-        function adminSetLevel(lvl) {
-            state.level = lvl;
-            if(lvl > state.maxLevel) state.maxLevel = lvl;
-            updateUI(); syncData();
-        }
-        function adminReset() {
-            state.gold = 300; state.level = 0; state.upgrades = { luck: 0, speed: 0 };
-            updateUI(); syncData();
-        }
+        function adminGiveGold(amt) { state.gold += amt; updateUI(); syncData(); }
+        function adminSetLevel(lvl) { state.level = lvl; if(lvl > state.maxLevel) state.maxLevel = lvl; updateUI(); syncData(); }
 
         function upgradeStat(type) {
             const currentVal = state.upgrades[type] || 0;
