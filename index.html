@@ -26,14 +26,12 @@
 
         .title-font { font-family: 'Black Han Sans', sans-serif; }
 
-        /* 망치 애니메이션 */
         .hammering { animation: hammer-anim 0.2s infinite; }
         @keyframes hammer-anim { 
             0%, 100% { transform: rotate(-20deg); } 
             50% { transform: rotate(20deg) translateY(5px); } 
         }
 
-        /* 강화 효과 */
         .success-glow { animation: success-flash 0.8s ease-out; }
         @keyframes success-flash {
             0% { box-shadow: 0 0 0px #22c55e; border-color: #22c55e; }
@@ -55,16 +53,19 @@
             transition: width linear; 
         }
 
-        /* 애드핏 규정 준수: 라운딩 제거 및 영역 확보 */
-        .ad-container { 
+        .adsense-area {
+            width: 100%;
+            min-height: 100px;
+            background: rgba(255,255,255,0.03);
+            border: 1px dashed rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .adfit-area { 
             width: 320px; 
             min-height: 50px; 
-            background-color: transparent;
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
             margin: 15px auto;
-            overflow: visible; 
         }
 
         .btn-grad {
@@ -77,7 +78,13 @@
         .tab-btn.active { color: #818cf8; border-bottom: 2px solid #818cf8; }
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .footer-info { font-size: 10px; color: #475569; line-height: 1.6; }
+
+        #admin-panel {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+        }
     </style>
 </head>
 <body class="p-4">
@@ -85,7 +92,7 @@
     <div id="game-ui" class="bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl w-full max-w-sm border border-slate-800 my-4 relative">
         
         <!-- 상단 내비게이션 -->
-        <div class="flex justify-around mb-6 border-b border-slate-800 pb-2">
+        <div class="flex justify-around mb-4 border-b border-slate-800 pb-2">
             <button onclick="switchTab('main')" id="tab-main" class="tab-btn active font-black text-sm pb-2">대장간</button>
             <button onclick="switchTab('shop')" id="tab-shop" class="tab-btn font-black text-sm pb-2 text-slate-500">상점</button>
             <button onclick="switchTab('book')" id="tab-book" class="tab-btn font-black text-sm pb-2 text-slate-500">도감</button>
@@ -93,14 +100,29 @@
 
         <!-- 메인 강화 탭 -->
         <div id="view-main">
-            <div class="flex justify-between items-center mb-6">
+            <!-- 대장간 상단 광고 -->
+            <div class="adsense-area">
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4717072640241610" crossorigin="anonymous"></script>
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-4717072640241610"
+                     data-ad-slot="4991457167"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script> (adsbygoogle = window.adsbygoogle || []).push({}); </script>
+            </div>
+
+            <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-2">
                     <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden ring-1 ring-slate-700">
                         <span id="default-icon">👤</span>
                         <img id="user-photo" src="" class="hidden w-full h-full object-cover">
                     </div>
                     <div>
-                        <p id="user-display-name" class="text-[9px] text-slate-500 font-bold uppercase">GUEST</p>
+                        <div class="flex items-center gap-2">
+                            <p id="user-display-name" class="text-[9px] text-slate-500 font-bold uppercase">GUEST</p>
+                            <button id="logout-btn" onclick="handleLogout()" class="hidden text-[8px] text-red-400 font-bold border border-red-400/30 px-1 rounded">LOGOUT</button>
+                        </div>
                         <p id="gold-display" class="text-xl font-black text-yellow-500">300 G</p>
                     </div>
                 </div>
@@ -114,10 +136,10 @@
                 <h2 id="sword-name" class="title-font text-2xl text-slate-100">훈련용 목검</h2>
                 <p id="sword-level" class="font-black text-indigo-500 text-xs mt-1 tracking-widest">+0 ENHANCED</p>
                 
-                <!-- 확률 표시 -->
                 <div class="mt-4 bg-slate-900/80 px-4 py-1 rounded-full border border-white/5 flex gap-2">
                     <span id="chance-display" class="text-[10px] text-green-400 font-black">100%</span>
                     <span id="bonus-badge" class="hidden text-[8px] bg-indigo-500 text-white px-1.5 rounded-md font-black">LUCK UP</span>
+                    <span id="event-badge" class="hidden text-[8px] bg-red-500 text-white px-1.5 rounded-md font-black italic">EVENT HOT!</span>
                 </div>
 
                 <div id="progress-container" class="absolute bottom-0 left-0 w-full h-1.5 bg-slate-800 hidden overflow-hidden rounded-b-[2rem]">
@@ -125,13 +147,12 @@
                 </div>
             </div>
 
-            <!-- 강화 버튼 -->
             <button id="enhance-btn" onclick="handleEnhance()" class="btn-grad w-full text-white py-5 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all">
                 강 화 (<span id="cost-display">10</span> G)
             </button>
 
-            <!-- 애드핏 광고 컨테이너 -->
-            <div class="ad-container">
+            <!-- 하단 카카오 애드핏 영역 -->
+            <div class="adfit-area">
                 <ins class="kakao_ad_area" style="display:none;"
                      data-ad-unit = "DAN-lXDfLDy1eqTSjmCp"
                      data-ad-width = "320"
@@ -139,7 +160,6 @@
                 <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
             </div>
 
-            <!-- 판매 버튼 -->
             <button onclick="handleSell()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 py-3 rounded-xl font-bold text-xs border border-white/5 transition-colors">
                 검 판매 (<span id="sell-display">0</span> G)
             </button>
@@ -150,6 +170,18 @@
         <!-- 상점 탭 -->
         <div id="view-shop" class="hidden py-4 space-y-4">
             <h3 class="font-black text-sm text-indigo-400 mb-2">대장장이 숙련도 업그레이드</h3>
+            
+            <!-- 상점 상단 광고 -->
+            <div class="adsense-area">
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4717072640241610" crossorigin="anonymous"></script>
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-4717072640241610"
+                     data-ad-slot="4417516172"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script> (adsbygoogle = window.adsbygoogle || []).push({}); </script>
+            </div>
             
             <div class="bg-slate-950 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
                 <div class="flex items-center gap-3">
@@ -178,17 +210,32 @@
                     <span id="price-speed">150</span> G
                 </button>
             </div>
+
+            <div class="adfit-area"><p class="text-[8px] text-center text-slate-700">AD AREA</p></div>
         </div>
 
         <!-- 도감 탭 -->
-        <div id="view-book" class="hidden py-4 no-scrollbar max-h-[400px] overflow-y-auto">
+        <div id="view-book" class="hidden py-4 no-scrollbar max-h-[450px] overflow-y-auto">
             <h3 class="font-black text-sm mb-4 text-indigo-400">판매 기록</h3>
+            
+            <!-- 도감 상단 광고 -->
+            <div class="adsense-area">
+                <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4717072640241610" crossorigin="anonymous"></script>
+                <ins class="adsbygoogle"
+                     style="display:block"
+                     data-ad-client="ca-pub-4717072640241610"
+                     data-ad-slot="9885125961"
+                     data-ad-format="auto"
+                     data-full-width-responsive="true"></ins>
+                <script> (adsbygoogle = window.adsbygoogle || []).push({}); </script>
+            </div>
+
             <div id="sell-records" class="space-y-2">
                 <p class="text-[10px] text-slate-600 text-center py-10">판매 기록이 없습니다.</p>
             </div>
             
             <h3 class="font-black text-sm mt-6 mb-4 text-indigo-400">나의 통계</h3>
-            <div class="bg-slate-950 p-4 rounded-xl border border-white/5 space-y-2">
+            <div class="bg-slate-950 p-4 rounded-xl border border-white/5 space-y-2 mb-4">
                 <div class="flex justify-between items-center">
                     <span class="text-xs text-slate-400">최고 강화 레벨</span>
                     <span id="max-level-record" class="text-sm font-black text-yellow-500">+0</span>
@@ -198,13 +245,45 @@
                     <span id="total-tries" class="text-sm font-black text-white">0회</span>
                 </div>
             </div>
-            
-            <div class="mt-8 pt-4 border-t border-slate-800 footer-info">
-                <p class="font-bold mb-1">[이용 안내]</p>
-                <p>• 본 게임은 무료 시뮬레이션 게임입니다.</p>
-                <p>• 강화 성공 확률은 각 단계별로 공정하게 적용됩니다.</p>
-                <p>• 데이터는 로그인 시 클라우드에 자동 저장됩니다.</p>
-                <p class="mt-2 text-[8px] opacity-50">© 2026 Legendary Blacksmith. All rights reserved.</p>
+            <div class="adfit-area"><p class="text-[8px] text-center text-slate-700">AD AREA</p></div>
+        </div>
+    </div>
+
+    <!-- 개발자 패널 버튼 -->
+    <div id="admin-panel" class="hidden">
+        <button onclick="toggleAdminModal()" class="bg-red-600 text-white w-14 h-14 rounded-full shadow-2xl font-black text-[10px] border-4 border-white/20">ADMIN</button>
+    </div>
+
+    <!-- 관리자 모달 -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/80 z-[200] hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-red-500/30 w-full max-w-md rounded-3xl p-6 max-h-[90vh] overflow-y-auto overflow-x-hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="title-font text-xl text-red-500">DEVELOPER COMMAND</h2>
+                <button onclick="toggleAdminModal()" class="text-slate-500">닫기</button>
+            </div>
+
+            <div class="space-y-4 mb-8">
+                <p class="text-xs font-bold text-slate-400 border-b border-slate-800 pb-2">서버 이벤트 컨트롤</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="runServerEvent('boost_chance')" class="bg-slate-800 p-3 rounded-xl text-[10px] hover:bg-indigo-900 transition-colors">🔥 확률 UP 이벤트 (10분)</button>
+                    <button onclick="runServerEvent('lower_cost')" class="bg-slate-800 p-3 rounded-xl text-[10px] hover:bg-indigo-900 transition-colors">💰 비용 DOWN 이벤트 (10분)</button>
+                    <button onclick="runServerEvent('drop_gold')" class="bg-slate-800 p-3 rounded-xl text-[10px] hover:bg-yellow-900 transition-colors">✨ 전체 1000G 뿌리기</button>
+                    <button onclick="stopAllEvents()" class="bg-red-900/30 text-red-400 p-3 rounded-xl text-[10px]">❌ 모든 이벤트 종료</button>
+                </div>
+            </div>
+
+            <div class="space-y-2 mb-8">
+                <p class="text-xs font-bold text-slate-400">특정 유저 골드 지급</p>
+                <div class="flex gap-2">
+                    <input id="target-uid" type="text" placeholder="User UID" class="bg-black border border-slate-700 rounded-lg p-2 text-[10px] flex-1">
+                    <input id="target-amount" type="number" placeholder="Amount" class="bg-black border border-slate-700 rounded-lg p-2 text-[10px] w-20">
+                    <button onclick="giveUserGold()" class="bg-indigo-600 px-4 rounded-lg text-[10px] font-bold">지급</button>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <p class="text-xs font-bold text-slate-400 border-b border-slate-800 pb-2">실시간 유저 현황</p>
+                <div id="admin-user-list" class="space-y-2 max-h-60 overflow-y-auto text-[9px]"></div>
             </div>
         </div>
     </div>
@@ -229,18 +308,14 @@
         const db = firebase.firestore();
         const googleProvider = new firebase.auth.GoogleAuthProvider();
 
+        const ADMIN_EMAIL = "jihoonwebs@gmail.com";
+
         let state = { 
-            user: null, 
-            gold: 300, 
-            level: 0, 
-            maxLevel: 0,
-            totalTries: 0,
-            isWorking: false,
-            upgrades: { luck: 0, speed: 0 },
-            sellHistory: {},
-            lastUpdated: 0 // 업데이트 버전 체크용
+            user: null, gold: 300, level: 0, maxLevel: 0, totalTries: 0,
+            isWorking: false, upgrades: { luck: 0, speed: 0 }, sellHistory: {}, lastUpdated: 0
         };
-        
+
+        let serverEvent = { chanceBoost: 0, costDiscount: 0 };
         const swordNames = ["목검", "철검", "강철검", "장검", "기사검", "명검", "영혼검", "용사검", "전설검", "신화검", "절대검"];
 
         function switchTab(tab) {
@@ -258,48 +333,41 @@
             try { await auth.signInWithPopup(googleProvider); } catch (e) { console.error(e); }
         }
 
+        async function handleLogout() {
+            try { await auth.signOut(); location.reload(); } catch (e) { console.error(e); }
+        }
+
+        db.collection('settings').doc('globalEvent').onSnapshot(doc => {
+            if (doc.exists) {
+                const data = doc.data();
+                const now = Date.now();
+                serverEvent.chanceBoost = data.chanceEnd > now ? data.chanceValue : 0;
+                serverEvent.costDiscount = data.costEnd > now ? data.costValue : 0;
+                const badge = document.getElementById('event-badge');
+                if (serverEvent.chanceBoost > 0 || serverEvent.costDiscount > 0) badge.classList.remove('hidden');
+                else badge.classList.add('hidden');
+                updateUI();
+            }
+        });
+
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 state.user = user;
                 const userRef = db.collection('users').doc(user.uid);
+                if (user.email === ADMIN_EMAIL) {
+                    document.getElementById('admin-panel').classList.remove('hidden');
+                    loadAdminUserList();
+                }
                 const doc = await userRef.get();
                 if (doc.exists) {
                     const data = doc.data();
-                    
-                    // 기존 데이터 로드
+                    Object.assign(state, data);
                     state.gold = data.gold ?? 300;
-                    state.level = data.level || 0;
-                    state.maxLevel = data.maxLevel || 0;
-                    state.totalTries = data.totalTries || 0;
-                    state.upgrades = data.upgrades || { luck: 0, speed: 0 };
-                    state.sellHistory = data.sellHistory || {};
-                    state.lastUpdated = data.lastUpdated || 0;
-
-                    // [업데이트 보상 로직] 상점 개편으로 인한 초기화 및 환급 (버전 260125 기준)
-                    if (state.lastUpdated < 260125) {
-                        let refundAmount = 0;
-                        if (state.upgrades.luck > 0) refundAmount += (state.upgrades.luck * 100);
-                        if (state.upgrades.speed > 0) refundAmount += (state.upgrades.speed * 150);
-                        
-                        if (refundAmount > 0) {
-                            refundAmount += 100; // 보너스 100골드
-                            state.gold += refundAmount;
-                            state.upgrades = { luck: 0, speed: 0 }; // 상점 초기화
-                            addLog(`상점 개편 보상 ${refundAmount}G가 지급되었습니다!`, "text-yellow-400 font-bold");
-                        }
-                        state.lastUpdated = 260125;
-                        await syncData();
-                    }
-
                 } else {
                     await userRef.set({ 
-                        gold: 300, 
-                        level: 0, 
-                        maxLevel: 0, 
-                        totalTries: 0, 
-                        upgrades: { luck: 0, speed: 0 }, 
-                        sellHistory: {},
-                        lastUpdated: 260125 
+                        uid: user.uid, displayName: user.displayName, gold: 300, 
+                        level: 0, maxLevel: 0, totalTries: 0, upgrades: { luck: 0, speed: 0 }, 
+                        sellHistory: {}, lastUpdated: 260125 
                     });
                 }
                 updateLoginUI(user);
@@ -309,6 +377,7 @@
 
         function updateLoginUI(user) {
             document.getElementById('login-btn').classList.add('hidden');
+            document.getElementById('logout-btn').classList.remove('hidden');
             document.getElementById('user-photo').src = user.photoURL;
             document.getElementById('user-photo').classList.remove('hidden');
             document.getElementById('default-icon').classList.add('hidden');
@@ -320,135 +389,127 @@
             document.getElementById('sword-level').innerText = `+${state.level} ENHANCED`;
             document.getElementById('sword-name').innerText = swordNames[Math.min(Math.floor(state.level/5), swordNames.length-1)];
             
-            // 강화 비용 (상향 유지)
-            const cost = Math.floor(10 * Math.pow(1.5, state.level));
-            const sell = Math.floor(25 * Math.pow(1.55, state.level));
+            let baseCost = Math.floor(10 * Math.pow(1.5, state.level));
+            if (serverEvent.costDiscount > 0) baseCost = Math.floor(baseCost * (1 - serverEvent.costDiscount/100));
             
-            let chance = Math.max(1, 100 - (state.level * 6.5));
-            chance += state.upgrades.luck;
+            const sell = Math.floor(25 * Math.pow(1.55, state.level));
+            let chance = Math.max(1, 100 - (state.level * 6.5)) + state.upgrades.luck + serverEvent.chanceBoost;
 
-            document.getElementById('cost-display').innerText = cost.toLocaleString();
+            document.getElementById('cost-display').innerText = baseCost.toLocaleString();
             document.getElementById('sell-display').innerText = sell.toLocaleString();
             document.getElementById('chance-display').innerText = `${Math.min(100, chance).toFixed(1)}%`;
             document.getElementById('max-level-record').innerText = `+${state.maxLevel}`;
             document.getElementById('total-tries').innerText = `${state.totalTries}회`;
             
-            const luckPrice = Math.floor(100 * Math.pow(1.6, state.upgrades.luck));
-            const speedPrice = Math.floor(150 * Math.pow(1.7, state.upgrades.speed));
-            
-            document.getElementById('price-luck').innerText = luckPrice.toLocaleString();
-            document.getElementById('price-speed').innerText = speedPrice.toLocaleString();
+            document.getElementById('price-luck').innerText = Math.floor(100 * Math.pow(1.6, state.upgrades.luck)).toLocaleString();
+            document.getElementById('price-speed').innerText = Math.floor(150 * Math.pow(1.7, state.upgrades.speed)).toLocaleString();
             document.getElementById('stat-luck').innerText = `현재 보너스: +${state.upgrades.luck}%`;
             document.getElementById('stat-speed').innerText = `현재 단축: -${(state.upgrades.speed * 0.1).toFixed(1)}초`;
             
             if(state.upgrades.luck > 0) document.getElementById('bonus-badge').classList.remove('hidden');
         }
 
+        function toggleAdminModal() { document.getElementById('admin-modal').classList.toggle('hidden'); }
+
+        async function loadAdminUserList() {
+            const listEl = document.getElementById('admin-user-list');
+            db.collection('users').onSnapshot(snapshot => {
+                listEl.innerHTML = '';
+                snapshot.forEach(doc => {
+                    const u = doc.data();
+                    const item = document.createElement('div');
+                    item.className = "bg-black/50 p-2 rounded border border-slate-800 flex justify-between items-center cursor-pointer";
+                    item.innerHTML = `<div><p class="font-bold text-white">${u.displayName || 'Guest'}</p><p class="opacity-50 text-[7px]">${u.uid}</p></div>
+                        <div class="text-right"><p class="text-yellow-500">${Math.floor(u.gold).toLocaleString()}G</p><p class="text-indigo-400">Lv.${u.level}</p></div>`;
+                    item.onclick = () => { document.getElementById('target-uid').value = u.uid; };
+                    listEl.appendChild(item);
+                });
+            });
+        }
+
+        async function runServerEvent(type) {
+            const eventRef = db.collection('settings').doc('globalEvent');
+            const now = Date.now();
+            const duration = 10 * 60 * 1000;
+            if (type === 'boost_chance') await eventRef.set({ chanceEnd: now + duration, chanceValue: 10 }, { merge: true });
+            else if (type === 'lower_cost') await eventRef.set({ costEnd: now + duration, costValue: 30 }, { merge: true });
+            else if (type === 'drop_gold') {
+                const snapshot = await db.collection('users').get();
+                const batch = db.batch();
+                snapshot.forEach(u => batch.update(u.ref, { gold: firebase.firestore.FieldValue.increment(1000) }));
+                await batch.commit();
+            }
+        }
+
+        async function stopAllEvents() {
+            await db.collection('settings').doc('globalEvent').set({ chanceEnd: 0, costEnd: 0, chanceValue: 0, costValue: 0 });
+        }
+
+        async function giveUserGold() {
+            const uid = document.getElementById('target-uid').value;
+            const amount = parseInt(document.getElementById('target-amount').value);
+            if (uid && !isNaN(amount)) await db.collection('users').doc(uid).update({ gold: firebase.firestore.FieldValue.increment(amount) });
+        }
+
         function upgradeStat(type) {
-            const prices = {
-                luck: Math.floor(100 * Math.pow(1.6, state.upgrades.luck)),
-                speed: Math.floor(150 * Math.pow(1.7, state.upgrades.speed))
-            };
-            
-            if(type === 'speed' && state.upgrades.speed >= 8) return addLog("최대 속도에 도달했습니다.", "text-slate-400");
-            
-            if(state.gold >= prices[type]) {
-                state.gold -= prices[type];
-                state.upgrades[type]++;
-                updateUI();
-                syncData();
-                addLog("능력치 강화 완료!", "text-indigo-400");
-            } else {
-                addLog("골드가 부족합니다.", "text-red-400");
+            const price = type === 'luck' ? Math.floor(100 * Math.pow(1.6, state.upgrades.luck)) : Math.floor(150 * Math.pow(1.7, state.upgrades.speed));
+            if(type === 'speed' && state.upgrades.speed >= 8) return;
+            if(state.gold >= price) {
+                state.gold -= price; state.upgrades[type]++;
+                updateUI(); syncData();
             }
         }
 
         function updateHistoryUI() {
             const container = document.getElementById('sell-records');
             const sortedLevels = Object.keys(state.sellHistory).map(Number).sort((a,b) => b-a);
-            
-            if(sortedLevels.length === 0) {
-                container.innerHTML = '<p class="text-[10px] text-slate-600 text-center py-10">판매 기록이 없습니다.</p>';
-                return;
-            }
-
+            if(sortedLevels.length === 0) return;
             container.innerHTML = sortedLevels.map(lvl => `
                 <div class="bg-slate-950/50 p-3 rounded-xl border border-white/5 flex justify-between items-center">
                     <span class="text-[11px] font-bold text-slate-200">+${lvl} 강화검</span>
                     <span class="text-[10px] text-indigo-400 font-black">${state.sellHistory[lvl]}회 판매</span>
-                </div>
-            `).join('');
+                </div>`).join('');
         }
 
         async function syncData() {
-            if (state.user) {
-                await db.collection('users').doc(state.user.uid).update({ 
-                    gold: state.gold, 
-                    level: state.level,
-                    maxLevel: state.maxLevel,
-                    totalTries: state.totalTries,
-                    upgrades: state.upgrades,
-                    sellHistory: state.sellHistory,
-                    lastUpdated: state.lastUpdated
-                });
-            }
+            if (state.user) await db.collection('users').doc(state.user.uid).update(state);
         }
 
         function handleEnhance() {
             if (state.isWorking) return;
-            const cost = Math.floor(10 * Math.pow(1.5, state.level));
-            if (state.gold < cost) return addLog("골드가 부족합니다!", "text-red-400");
+            let cost = Math.floor(10 * Math.pow(1.5, state.level));
+            if (serverEvent.costDiscount > 0) cost = Math.floor(cost * (1 - serverEvent.costDiscount/100));
+            if (state.gold < cost) return;
             
-            state.gold -= cost; 
-            state.isWorking = true; 
-            state.totalTries++;
+            state.gold -= cost; state.isWorking = true; state.totalTries++;
             updateUI();
-            
             document.getElementById('snd-hammer').play();
             document.getElementById('progress-container').classList.remove('hidden');
             document.getElementById('hammer-icon').classList.remove('hidden');
             const bar = document.getElementById('progress-bar');
             bar.style.transition = 'none'; bar.style.width = '0%';
-            
             const workTime = Math.max(200, 1000 - (state.upgrades.speed * 100));
-
-            setTimeout(() => { 
-                bar.style.transition = `width ${workTime}ms linear`; 
-                bar.style.width = '100%'; 
-            }, 50);
+            setTimeout(() => { bar.style.transition = `width ${workTime}ms linear`; bar.style.width = '100%'; }, 50);
 
             setTimeout(() => {
                 state.isWorking = false;
                 document.getElementById('progress-container').classList.add('hidden');
                 document.getElementById('hammer-icon').classList.add('hidden');
-                
-                let chance = Math.max(1, 100 - (state.level * 6.5));
-                chance += state.upgrades.luck;
-
+                let chance = Math.max(1, 100 - (state.level * 6.5)) + state.upgrades.luck + serverEvent.chanceBoost;
                 const card = document.getElementById('sword-card');
-                
                 if (Math.random() * 100 <= chance) {
                     state.level++;
                     if(state.level > state.maxLevel) state.maxLevel = state.level;
                     document.getElementById('snd-success').play();
                     card.classList.add('success-glow');
                     setTimeout(() => card.classList.remove('success-glow'), 800);
-                    addLog(`강화 성공! (+${state.level})`, "text-green-400 font-bold");
                 } else {
-                    if (state.level >= 10) state.level = 0; 
-                    else if (state.level >= 3) state.level--;
-                    
-                    const failSnd = document.getElementById('snd-fail');
-                    failSnd.volume = 0.2; 
-                    failSnd.play();
-                    setTimeout(() => { failSnd.pause(); failSnd.currentTime = 0; }, 500);
-
+                    if (state.level >= 10) state.level = 0; else if (state.level >= 3) state.level--;
+                    document.getElementById('snd-fail').play();
                     card.classList.add('fail-glow');
                     setTimeout(() => card.classList.remove('fail-glow'), 800);
-                    addLog("강화에 실패했습니다.", "text-red-500");
                 }
-                updateUI(); 
-                syncData();
+                updateUI(); syncData();
             }, workTime + 50);
         }
 
@@ -456,17 +517,8 @@
             if (state.level === 0 || state.isWorking) return;
             const price = Math.floor(25 * Math.pow(1.55, state.level));
             state.sellHistory[state.level] = (state.sellHistory[state.level] || 0) + 1;
-            state.gold += price; 
-            state.level = 0; 
-            updateUI(); 
-            syncData();
-            addLog(`${price.toLocaleString()} G에 검을 판매했습니다.`, "text-blue-400");
-        }
-
-        function addLog(msg, colorClass) {
-            const status = document.getElementById('status-msg');
-            status.innerText = `> ${msg}`;
-            status.className = `mt-4 text-[10px] italic text-center h-4 ${colorClass}`;
+            state.gold += price; state.level = 0; 
+            updateUI(); syncData();
         }
     </script>
 </body>
