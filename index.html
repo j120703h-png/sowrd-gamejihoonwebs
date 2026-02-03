@@ -27,29 +27,35 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .ad-slot-wrapper { width: 100%; margin-top: 1rem; margin-bottom: 1rem; min-height: 60px; background: rgba(0,0,0,0.2); border-radius: 0.75rem; overflow: hidden; display: flex; justify-content: center; align-items: center; }
         
-        /* 알림 배너 스티키 */
-        #event-banner { position: sticky; top: 0; z-index: 50; width: 100%; display: none; }
-        /* 개발자 메뉴 고정 */
+        /* 이벤트 배너 특화 스타일 */
+        #event-banner { 
+            position: sticky; top: 0; z-index: 50; width: 100%; display: none; 
+            background: linear-gradient(90deg, #4338ca, #6d28d9, #4338ca);
+            background-size: 200% auto;
+            animation: shine 3s linear infinite;
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+
         #admin-fab { position: fixed; bottom: 20px; right: 20px; z-index: 100; }
     </style>
 </head>
 <body class="p-0">
 
-    <!-- 전역 이벤트 배너 -->
-    <div id="event-banner" class="bg-indigo-600 text-white text-[11px] font-black py-2 px-4 text-center shadow-lg">
-        📢 <span id="event-text">서버 이벤트가 진행 중입니다!</span>
+    <!-- 개선된 이벤트 배너 -->
+    <div id="event-banner" class="text-white py-2.5 px-4 shadow-xl border-b border-white/20">
+        <div class="max-w-md mx-auto flex items-center justify-center gap-2">
+            <span class="bg-yellow-400 text-slate-900 text-[9px] font-black px-1.5 py-0.5 rounded-sm animate-pulse">EVENT</span>
+            <span id="event-text" class="text-[11px] font-bold tracking-tight"></span>
+        </div>
     </div>
 
     <div id="game-ui" class="bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl w-full max-w-sm border border-slate-800 my-4 relative">
-        
-        <!-- 상단 탭 -->
         <div class="flex justify-around mb-4 border-b border-slate-800 pb-2">
             <button onclick="switchTab('main')" id="tab-main" class="tab-btn active font-black text-sm pb-2">대장간</button>
             <button onclick="switchTab('shop')" id="tab-shop" class="tab-btn font-black text-sm pb-2 text-slate-500">상점</button>
             <button onclick="switchTab('book')" id="tab-book" class="tab-btn font-black text-sm pb-2 text-slate-500">도감</button>
         </div>
 
-        <!-- [대장간 탭] -->
         <div id="view-main">
             <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center gap-2">
@@ -59,7 +65,7 @@
                     </div>
                     <div>
                         <div class="flex items-center gap-2">
-                            <p id="user-display-name" class="text-[9px] text-slate-500 font-bold uppercase tracking-tighter">GUEST</p>
+                            <p id="user-display-name" class="text-[9px] text-slate-500 font-bold uppercase">GUEST</p>
                             <button id="logout-btn" onclick="handleLogout()" class="hidden text-[8px] text-red-400 font-bold border border-red-400/30 px-1 rounded">LOGOUT</button>
                         </div>
                         <p id="gold-display" class="text-xl font-black text-yellow-500">300 G</p>
@@ -68,7 +74,6 @@
                 <button id="login-btn" onclick="handleGoogleLogin()" class="text-[10px] bg-white text-slate-900 px-3 py-1.5 rounded-lg font-black shadow-lg hover:bg-slate-200 transition-all">LOGIN</button>
             </div>
 
-            <!-- 대장간 상단 광고 -->
             <div class="ad-slot-wrapper">
                 <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-b2FH3ZsMD3Y1zROv" data-ad-width="320" data-ad-height="50"></ins>
                 <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
@@ -77,7 +82,7 @@
             <div id="sword-card" class="bg-slate-950 rounded-[2rem] p-10 flex flex-col items-center border border-white/5 mb-4 relative transition-all duration-300">
                 <div id="hammer-icon" class="absolute top-4 right-8 text-5xl hidden hammering">🔨</div>
                 <div id="sword-display" class="text-7xl mb-4 select-none drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]">🗡️</div>
-                <h2 id="sword-name" class="title-font text-2xl text-slate-100 text-center">훈련용 목검</h2>
+                <h2 id="sword-name" class="title-font text-2xl text-slate-100">훈련용 목검</h2>
                 <p id="sword-level" class="font-black text-indigo-500 text-xs mt-1 tracking-widest">+0 ENHANCED</p>
                 <div class="mt-4 bg-slate-900/80 px-4 py-1 rounded-full border border-white/5 flex gap-2">
                     <span id="chance-display" class="text-[10px] text-green-400 font-black">100%</span>
@@ -91,7 +96,6 @@
                 강 화 (<span id="cost-display">10</span> G)
             </button>
 
-            <!-- 강화-판매 사이 광고 -->
             <div class="ad-slot-wrapper">
                 <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-lXDfLDy1eqTSjmCp" data-ad-width="320" data-ad-height="50"></ins>
                 <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
@@ -103,7 +107,6 @@
             <div id="status-msg" class="mt-4 text-[10px] text-slate-500 italic text-center h-4">> 대장간에 오신 것을 환영합니다.</div>
         </div>
 
-        <!-- [상점 탭] -->
         <div id="view-shop" class="hidden py-4 space-y-4">
             <div class="ad-slot-wrapper">
                 <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-66Pw3NmJZsUEFECb" data-ad-width="320" data-ad-height="50"></ins>
@@ -126,7 +129,6 @@
             </div>
         </div>
 
-        <!-- [도감 탭] -->
         <div id="view-book" class="hidden py-4 no-scrollbar max-h-[500px] overflow-y-auto">
             <div class="ad-slot-wrapper">
                 <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-m83Hv6kSAXVZxV8Q" data-ad-width="320" data-ad-height="50"></ins>
@@ -141,12 +143,12 @@
         </div>
     </div>
 
-    <!-- 개발자용 실명 입력 모달 -->
+    <!-- 실명 입력 모달 -->
     <div id="name-modal" class="fixed inset-0 bg-black/80 z-[200] flex items-center justify-center hidden p-6">
         <div class="bg-slate-900 p-8 rounded-3xl border border-indigo-500/50 w-full max-w-xs text-center">
             <h2 class="title-font text-xl text-white mb-2">실명 인증</h2>
-            <p class="text-[10px] text-slate-400 mb-6">개발자 이벤트 및 랭킹 시스템 관리를 위해<br>실명을 입력해 주세요.</p>
-            <input id="real-name-input" type="text" placeholder="이름 입력" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <p class="text-[10px] text-slate-400 mb-6">개발자 이벤트 및 랭킹 관리를 위해 실명을 입력해 주세요.</p>
+            <input id="real-name-input" type="text" placeholder="이름 입력" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm mb-4">
             <button onclick="submitRealName()" class="w-full bg-indigo-600 py-3 rounded-xl font-black text-sm">인증 및 시작</button>
         </div>
     </div>
@@ -156,7 +158,7 @@
         <div id="admin-menu" class="hidden bg-slate-900 border border-red-500/50 p-4 rounded-3xl shadow-2xl mb-2 w-64 space-y-3">
             <p class="text-[10px] text-red-500 font-black">ADMIN CONSOLE</p>
             <div class="space-y-2">
-                <p class="text-[9px] text-slate-400">1. 대상 선택 및 골드 지급</p>
+                <p class="text-[9px] text-slate-400">유저 골드 지급</p>
                 <select id="admin-target" class="w-full bg-slate-800 text-[10px] p-2 rounded"></select>
                 <div class="flex gap-1">
                     <input id="admin-gold-amt" type="number" placeholder="금액" class="w-full bg-slate-800 text-[10px] p-2 rounded">
@@ -165,13 +167,13 @@
             </div>
             <hr class="border-slate-800">
             <div class="space-y-2">
-                <p class="text-[9px] text-slate-400">2. 전체 이벤트 제어</p>
-                <input id="admin-msg" type="text" placeholder="배너 메시지" class="w-full bg-slate-800 text-[10px] p-2 rounded">
+                <p class="text-[9px] text-slate-400">전체 이벤트 설정</p>
+                <input id="admin-msg" type="text" placeholder="메시지" class="w-full bg-slate-800 text-[10px] p-2 rounded">
                 <div class="grid grid-cols-2 gap-1">
                     <input id="admin-evt-luck" type="number" placeholder="확률+" class="bg-slate-800 text-[10px] p-2 rounded">
                     <input id="admin-evt-div" type="number" placeholder="비용n분" class="bg-slate-800 text-[10px] p-2 rounded">
                 </div>
-                <input id="admin-evt-time" type="number" placeholder="지속시간(분)" class="w-full bg-slate-800 text-[10px] p-2 rounded">
+                <input id="admin-evt-time" type="number" placeholder="시간(분)" class="w-full bg-slate-800 text-[10px] p-2 rounded">
                 <button onclick="adminStartEvent()" class="w-full bg-indigo-600 text-[10px] py-2 rounded font-bold">이벤트 시작</button>
                 <button onclick="adminStopEvent()" class="w-full bg-slate-700 text-[10px] py-1 rounded font-bold">모든 효과 종료</button>
             </div>
@@ -208,7 +210,6 @@
         let globalEvent = { luck: 0, div: 1, msg: "", endTime: 0 };
         const swordNames = ["목검", "철검", "강철검", "장검", "기사검", "명검", "영혼검", "용사검", "전설검", "신화검", "절대검"];
 
-        // 탭 전환
         function switchTab(tab) {
             ['main', 'shop', 'book'].forEach(t => {
                 document.getElementById(`view-${t}`).classList.add('hidden');
@@ -226,7 +227,6 @@
 
         async function handleLogout() { try { await auth.signOut(); location.reload(); } catch (e) { console.error(e); } }
 
-        // 초기화 및 실명 체크
         auth.onAuthStateChanged(async (user) => {
             if (user) {
                 state.user = user;
@@ -260,7 +260,6 @@
             }
         });
 
-        // 실명 저장
         async function submitRealName() {
             const name = document.getElementById('real-name-input').value.trim();
             if(!name) return;
@@ -269,25 +268,28 @@
             document.getElementById('name-modal').classList.add('hidden');
             await syncData();
             updateLoginUI(state.user);
+            if(state.user.email === ADMIN_EMAIL) loadAdminUserList();
         }
 
-        // 글로벌 이벤트 리스너
         function listenGlobalEvent() {
             db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('system').doc('event')
             .onSnapshot(doc => {
                 if(doc.exists) {
                     globalEvent = doc.data();
                     const now = Date.now();
+                    const banner = document.getElementById('event-banner');
+                    const text = document.getElementById('event-text');
+                    
                     if(globalEvent.endTime > now) {
-                        document.getElementById('event-banner').style.display = 'block';
-                        document.getElementById('event-text').innerText = globalEvent.msg || "특별 이벤트 진행 중!";
+                        banner.style.display = 'block';
+                        text.innerText = globalEvent.msg || "특별 이벤트가 시작되었습니다!";
                     } else {
-                        document.getElementById('event-banner').style.display = 'none';
+                        banner.style.display = 'none';
                         globalEvent = { luck: 0, div: 1, msg: "", endTime: 0 };
                     }
                     updateUI();
                 }
-            });
+            }, (err) => console.log("Event listen error"));
         }
 
         async function loadAdminUserList() {
@@ -298,48 +300,47 @@
                 const d = doc.data();
                 const opt = document.createElement('option');
                 opt.value = doc.id;
-                opt.innerText = `${d.realName || d.displayName} (${d.gold}G)`;
+                opt.innerText = `${d.realName || d.displayName} (${d.gold.toLocaleString()}G)`;
                 select.appendChild(opt);
             });
         }
 
         function toggleAdminMenu() {
-            const menu = document.getElementById('admin-menu');
-            menu.classList.toggle('hidden');
+            document.getElementById('admin-menu').classList.toggle('hidden');
+            if(!document.getElementById('admin-menu').classList.contains('hidden')) loadAdminUserList();
         }
 
-        // 개발자 기능: 골드 지급
         async function adminGiveGold() {
             const uid = document.getElementById('admin-target').value;
             const amt = parseInt(document.getElementById('admin-gold-amt').value);
-            if(!uid || !amt) return;
+            if(!uid || isNaN(amt)) return;
             const ref = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('users').doc(uid);
             const doc = await ref.get();
             if(doc.exists) {
-                await ref.update({ gold: doc.data().gold + amt });
-                alert('골드 지급 완료');
+                const newGold = doc.data().gold + amt;
+                await ref.update({ gold: newGold });
+                if(uid === state.user.uid) { state.gold = newGold; updateUI(); }
+                alert(`${d.realName || d.displayName}님에게 ${amt}G 지급 완료`);
                 loadAdminUserList();
             }
         }
 
-        // 개발자 기능: 이벤트 시작
         async function adminStartEvent() {
             const msg = document.getElementById('admin-msg').value;
             const luck = parseFloat(document.getElementById('admin-evt-luck').value) || 0;
             const div = parseFloat(document.getElementById('admin-evt-div').value) || 1;
             const time = parseInt(document.getElementById('admin-evt-time').value) || 10;
-            
             await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('system').doc('event').set({
                 msg, luck, div, endTime: Date.now() + (time * 60000)
             });
-            alert('이벤트가 시작되었습니다.');
+            alert('이벤트가 성공적으로 등록되었습니다.');
         }
 
         async function adminStopEvent() {
             await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('system').doc('event').set({
                 msg: "", luck: 0, div: 1, endTime: 0
             });
-            alert('모든 이벤트가 종료되었습니다.');
+            alert('진행 중인 모든 이벤트가 종료되었습니다.');
         }
 
         function updateLoginUI(user) {
@@ -358,23 +359,20 @@
             document.getElementById('sword-level').innerText = `+${state.level} ENHANCED`;
             document.getElementById('sword-name').innerText = swordNames[Math.min(Math.floor(state.level/5), swordNames.length-1)];
             
-            // 이벤트 적용 로직
             const isEvtActive = globalEvent.endTime > Date.now();
-            const evtLuck = isEvtActive ? globalEvent.luck : 0;
-            const evtDiv = isEvtActive ? globalEvent.div : 1;
+            const evtLuck = (isEvtActive && state.user) ? globalEvent.luck : 0;
+            const evtDiv = (isEvtActive && state.user) ? globalEvent.div : 1;
 
             let baseCost = Math.floor(10 * Math.pow(1.5, state.level));
-            let finalCost = Math.floor(baseCost / evtDiv);
-            const sell = Math.floor(25 * Math.pow(1.55, state.level));
+            let finalCost = Math.max(1, Math.floor(baseCost / evtDiv));
             let baseChance = Math.max(1, 100 - (state.level * 6.5)) + (state.upgrades.luck || 0);
             let finalChance = baseChance + evtLuck;
 
             document.getElementById('cost-display').innerText = finalCost.toLocaleString();
-            document.getElementById('sell-display').innerText = sell.toLocaleString();
             document.getElementById('chance-display').innerText = `${Math.min(100, finalChance).toFixed(1)}%`;
+            document.getElementById('sell-display').innerText = Math.floor(25 * Math.pow(1.55, state.level)).toLocaleString();
             document.getElementById('max-level-record').innerText = `+${state.maxLevel}`;
             document.getElementById('total-tries').innerText = `${state.totalTries}회`;
-            
             document.getElementById('price-luck').innerText = Math.floor(100 * Math.pow(1.6, state.upgrades.luck || 0)).toLocaleString();
             document.getElementById('price-speed').innerText = Math.floor(150 * Math.pow(1.7, state.upgrades.speed || 0)).toLocaleString();
             document.getElementById('stat-luck').innerText = `확률 보너스: +${state.upgrades.luck || 0}%`;
@@ -411,15 +409,9 @@
 
         function handleEnhance() {
             if (state.isWorking) return;
-            // 게스트 참여 불가 (이벤트 중일 때)
             const isEvtActive = globalEvent.endTime > Date.now();
-            if(!state.user && isEvtActive) {
-                alert("이벤트 혜택을 받으려면 로그인이 필요합니다.");
-                return;
-            }
-
-            const evtDiv = isEvtActive && state.user ? globalEvent.div : 1;
-            let cost = Math.floor(Math.floor(10 * Math.pow(1.5, state.level)) / evtDiv);
+            const evtDiv = (isEvtActive && state.user) ? globalEvent.div : 1;
+            let cost = Math.max(1, Math.floor(Math.floor(10 * Math.pow(1.5, state.level)) / evtDiv));
             
             if (state.gold < cost) return;
             state.gold -= cost; state.isWorking = true; state.totalTries++;
@@ -435,10 +427,8 @@
                 state.isWorking = false;
                 document.getElementById('progress-container').classList.add('hidden');
                 document.getElementById('hammer-icon').classList.add('hidden');
-                
-                const evtLuck = isEvtActive && state.user ? globalEvent.luck : 0;
+                const evtLuck = (isEvtActive && state.user) ? globalEvent.luck : 0;
                 let chance = Math.max(1, 100 - (state.level * 6.5)) + (state.upgrades.luck || 0) + evtLuck;
-                
                 const card = document.getElementById('sword-card');
                 if (Math.random() * 100 <= chance) {
                     state.level++;
