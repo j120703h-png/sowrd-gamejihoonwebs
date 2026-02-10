@@ -3,548 +3,457 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>검 강화 Pro - 실시간 리더보드 업데이트</title>
+    <title>검 강화 Pro - 2026 전설의 대장장이</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Noto+Sans+KR:wght@400;700;900&display=swap');
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: #020617; color: #f8fafc; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #020617; color: #f8fafc; margin: 0; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
         .title-font { font-family: 'Black Han Sans', sans-serif; }
-        .tab-btn.active { color: #818cf8; border-bottom: 2px solid #818cf8; }
+        .hammering { animation: hammer-anim 0.2s infinite; }
+        @keyframes hammer-anim { 0%, 100% { transform: rotate(-20deg); } 50% { transform: rotate(20deg) translateY(5px); } }
+        .success-glow { animation: success-flash 0.8s ease-out; }
+        @keyframes success-flash { 0% { box-shadow: 0 0 0px #22c55e; border-color: #22c55e; } 50% { box-shadow: 0 0 40px #22c55e; border-color: #22c55e; transform: scale(1.05); } 100% { box-shadow: 0 0 0px #22c55e; border-color: rgba(255,255,255,0.05); } }
+        .fail-glow { animation: fail-flash 0.8s ease-out; }
+        @keyframes fail-flash { 0% { box-shadow: 0 0 0px #ef4444; border-color: #ef4444; } 50% { box-shadow: 0 0 40px #ef4444; border-color: #ef4444; transform: translateX(5px); } 100% { box-shadow: 0 0 0px #ef4444; border-color: rgba(255,255,255,0.05); } }
+        .loading-bar { width: 0%; height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); transition: width linear; }
         .btn-grad { background-image: linear-gradient(to right, #4f46e5 0%, #7c3aed 51%, #4f46e5 100%); transition: 0.5s; background-size: 200% auto; }
         .btn-grad:hover { background-position: right center; }
-        .ad-slot-wrapper { width: 100%; min-height: 50px; background: rgba(255,255,255,0.03); border-radius: 0.75rem; display: flex; justify-content: center; align-items: center; margin: 0.5rem 0; overflow: hidden; border: 1px dashed rgba(255,255,255,0.1); }
+        .tab-btn.active { color: #818cf8; border-bottom: 2px solid #818cf8; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        .ad-slot-wrapper { width: 100%; margin-top: 1rem; margin-bottom: 1rem; min-height: 60px; background: rgba(0,0,0,0.2); border-radius: 0.75rem; overflow: hidden; display: flex; justify-content: center; align-items: center; }
         
-        #toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; pointer-events: none; }
-        .toast { padding: 10px 20px; border-radius: 12px; font-size: 13px; font-weight: bold; margin-bottom: 8px; animation: slideDown 0.3s ease-out; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-        .toast.success { background: #22c55e; color: white; }
-        .toast.error { background: #ef4444; color: white; }
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .leaderboard-item { transition: all 0.3s ease; }
-        .leaderboard-item:nth-child(1) { border-left: 4px solid #fcd34d; background: rgba(252, 211, 77, 0.05); }
+        /* 이벤트 배너 특화 스타일 */
+        #event-banner { 
+            position: sticky; top: 0; z-index: 50; width: 100%; display: none; 
+            background: linear-gradient(90deg, #4338ca, #6d28d9, #4338ca);
+            background-size: 200% auto;
+            animation: shine 3s linear infinite;
+        }
+        @keyframes shine { to { background-position: 200% center; } }
+
+        #admin-fab { position: fixed; bottom: 20px; right: 20px; z-index: 100; }
     </style>
 </head>
-<body class="p-4">
+<body class="p-0">
 
-    <div id="toast-container"></div>
+    <!-- 개선된 이벤트 배너 -->
+    <div id="event-banner" class="text-white py-2.5 px-4 shadow-xl border-b border-white/20">
+        <div class="max-w-md mx-auto flex items-center justify-center gap-2">
+            <span class="bg-yellow-400 text-slate-900 text-[9px] font-black px-1.5 py-0.5 rounded-sm animate-pulse">EVENT</span>
+            <span id="event-text" class="text-[11px] font-bold tracking-tight"></span>
+        </div>
+    </div>
 
-    <div id="game-ui" class="bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl w-full max-w-sm border border-slate-800 relative">
-        <!-- 탭 메뉴 -->
-        <div class="flex justify-around mb-6 border-b border-slate-800 pb-2">
+    <div id="game-ui" class="bg-slate-900 p-6 rounded-[2.5rem] shadow-2xl w-full max-w-sm border border-slate-800 my-4 relative">
+        <div class="flex justify-around mb-4 border-b border-slate-800 pb-2">
             <button onclick="switchTab('main')" id="tab-main" class="tab-btn active font-black text-sm pb-2">대장간</button>
             <button onclick="switchTab('shop')" id="tab-shop" class="tab-btn font-black text-sm pb-2 text-slate-500">상점</button>
-            <button onclick="switchTab('menu')" id="tab-menu" class="tab-btn font-black text-sm pb-2 text-slate-500">메뉴</button>
+            <button onclick="switchTab('book')" id="tab-book" class="tab-btn font-black text-sm pb-2 text-slate-500">도감</button>
         </div>
 
-        <!-- 메인 강화 뷰 -->
         <div id="view-main">
-            <!-- 대장간 상단 카카오 에드핏 -->
-            <div class="ad-slot-wrapper">
-                <ins class="kakao_ad_area" style="display:none;"
-                    data-ad-unit = "DAN-b2FH3ZsMD3Y1zROv"
-                    data-ad-width = "320"
-                    data-ad-height = "50"></ins>
-                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
-            </div>
-
-            <div class="flex justify-between items-center mb-6 mt-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center ring-2 ring-indigo-500/30 overflow-hidden">
-                        <span id="default-icon" class="text-xl">👤</span>
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center gap-2">
+                    <div class="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden ring-1 ring-slate-700">
+                        <span id="default-icon">👤</span>
                         <img id="user-photo" src="" class="hidden w-full h-full object-cover">
                     </div>
                     <div>
-                        <p id="user-display-name" class="text-[10px] text-indigo-400 font-bold uppercase">GUEST</p>
+                        <div class="flex items-center gap-2">
+                            <p id="user-display-name" class="text-[9px] text-slate-500 font-bold uppercase">GUEST</p>
+                            <button id="logout-btn" onclick="handleLogout()" class="hidden text-[8px] text-red-400 font-bold border border-red-400/30 px-1 rounded">LOGOUT</button>
+                        </div>
                         <p id="gold-display" class="text-xl font-black text-yellow-500">300 G</p>
                     </div>
                 </div>
-                <button id="login-btn" onclick="handleGoogleLogin()" class="text-[10px] bg-white text-black px-3 py-1.5 rounded-lg font-black shadow-lg">LOGIN</button>
+                <button id="login-btn" onclick="handleGoogleLogin()" class="text-[10px] bg-white text-slate-900 px-3 py-1.5 rounded-lg font-black shadow-lg hover:bg-slate-200 transition-all">LOGIN</button>
             </div>
 
-            <!-- 대장간 카드 -->
-            <div class="bg-slate-950 rounded-[2rem] p-8 flex flex-col items-center border border-white/5 mb-4">
-                <div id="sword-display" class="text-6xl mb-4 drop-shadow-[0_0_15px_rgba(99,102,241,0.4)]">🗡️</div>
-                <h2 id="sword-name" class="title-font text-xl">훈련용 목검</h2>
-                <p id="sword-level" class="font-black text-indigo-500 text-[10px] mt-1 tracking-widest">+0 ENHANCED</p>
-                <span id="chance-display" class="text-[10px] text-green-400 font-bold mt-2">100%</span>
-            </div>
-
-            <button id="enhance-btn" onclick="handleEnhance()" class="btn-grad w-full text-white py-5 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all mb-4">
-                강 화 (<span id="cost-display">10</span> G)
-            </button>
-
-            <!-- 강화버튼 밑 카카오 에드핏 -->
             <div class="ad-slot-wrapper">
-                <ins class="kakao_ad_area" style="display:none;"
-                    data-ad-unit = "DAN-lXDfLDy1eqTSjmCp"
-                    data-ad-width = "320"
-                    data-ad-height = "50"></ins>
+                <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-b2FH3ZsMD3Y1zROv" data-ad-width="320" data-ad-height="50"></ins>
                 <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
             </div>
 
-            <button onclick="handleSell()" class="w-full mt-2 bg-slate-800 text-slate-400 py-3 rounded-xl font-bold text-xs border border-white/5">
-                검 판매 (<span id="sell-display">0</span> G)
-            </button>
-
-            <!-- 실시간 코인 리더보드 -->
-            <div class="mt-8">
-                <div class="flex items-center justify-between mb-3 px-1">
-                    <h3 class="text-[11px] font-black text-indigo-400 flex items-center gap-1">
-                        🏆 실시간 코인 랭킹
-                    </h3>
-                    <span class="text-[8px] text-slate-500 animate-pulse">LIVE 업데이트 중</span>
+            <div id="sword-card" class="bg-slate-950 rounded-[2rem] p-10 flex flex-col items-center border border-white/5 mb-4 relative transition-all duration-300">
+                <div id="hammer-icon" class="absolute top-4 right-8 text-5xl hidden hammering">🔨</div>
+                <div id="sword-display" class="text-7xl mb-4 select-none drop-shadow-[0_0_10px_rgba(99,102,241,0.5)]">🗡️</div>
+                <h2 id="sword-name" class="title-font text-2xl text-slate-100">훈련용 목검</h2>
+                <p id="sword-level" class="font-black text-indigo-500 text-xs mt-1 tracking-widest">+0 ENHANCED</p>
+                <div class="mt-4 bg-slate-900/80 px-4 py-1 rounded-full border border-white/5 flex gap-2">
+                    <span id="chance-display" class="text-[10px] text-green-400 font-black">100%</span>
                 </div>
-                <div id="coin-leaderboard" class="space-y-2 max-h-[200px] overflow-y-auto no-scrollbar pb-4">
-                    <div class="text-center py-4 text-[10px] text-slate-500">랭킹 데이터를 불러오는 중...</div>
+                <div id="progress-container" class="absolute bottom-0 left-0 w-full h-1.5 bg-slate-800 hidden overflow-hidden rounded-b-[2rem]">
+                    <div id="progress-bar" class="loading-bar"></div>
                 </div>
             </div>
+
+            <button id="enhance-btn" onclick="handleEnhance()" class="btn-grad w-full text-white py-5 rounded-2xl font-black text-xl shadow-lg active:scale-95 transition-all">
+                강 화 (<span id="cost-display">10</span> G)
+            </button>
+
+            <div class="ad-slot-wrapper">
+                <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-lXDfLDy1eqTSjmCp" data-ad-width="320" data-ad-height="50"></ins>
+                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+            </div>
+
+            <button onclick="handleSell()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-400 py-3 rounded-xl font-bold text-xs border border-white/5 transition-colors">
+                검 판매 (<span id="sell-display">0</span> G)
+            </button>
+            <div id="status-msg" class="mt-4 text-[10px] text-slate-500 italic text-center h-4">> 대장간에 오신 것을 환영합니다.</div>
         </div>
 
-        <!-- 상점 뷰 -->
         <div id="view-shop" class="hidden py-4 space-y-4">
+            <div class="ad-slot-wrapper">
+                <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-66Pw3NmJZsUEFECb" data-ad-width="320" data-ad-height="50"></ins>
+                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
+            </div>
             <h3 class="font-black text-sm text-indigo-400 mb-2">숙련도 업그레이드</h3>
             <div class="bg-slate-950 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <span class="text-2xl">📜</span>
-                    <div><p class="text-xs font-black">정교한 연마</p><p id="stat-luck" class="text-[8px] text-green-400">확률 보너스: +0%</p></div>
+                    <div class="text-3xl">📜</div>
+                    <div><p class="text-xs font-black">정교한 연마</p><p id="stat-luck" class="text-[8px] text-green-400 font-bold">확률 보너스: +0%</p></div>
                 </div>
                 <button onclick="upgradeStat('luck')" class="bg-indigo-600 px-3 py-2 rounded-xl text-[10px] font-black min-w-[70px]"><span id="price-luck">100</span> G</button>
             </div>
             <div class="bg-slate-950 p-4 rounded-2xl border border-white/5 flex justify-between items-center">
                 <div class="flex items-center gap-3">
-                    <span class="text-2xl">⚒️</span>
-                    <div><p class="text-xs font-black">신속한 손길</p><p id="stat-speed" class="text-[8px] text-indigo-400">속도 단축: -0.0초</p></div>
+                    <div class="text-3xl">⚒️</div>
+                    <div><p class="text-xs font-black">신속한 손길</p><p id="stat-speed" class="text-[8px] text-indigo-400 font-bold">속도 단축: -0.0초</p></div>
                 </div>
                 <button onclick="upgradeStat('speed')" class="bg-indigo-600 px-3 py-2 rounded-xl text-[10px] font-black min-w-[70px]"><span id="price-speed">150</span> G</button>
             </div>
         </div>
 
-        <!-- 메뉴 탭 -->
-        <div id="view-menu" class="hidden py-4 space-y-4 no-scrollbar max-h-[500px] overflow-y-auto">
-            <div class="flex gap-2 p-1 bg-slate-950 rounded-xl mb-4">
-                <button onclick="switchMenuSub('stock')" id="sub-stock-btn" class="flex-1 py-2 text-[10px] font-black rounded-lg bg-indigo-600 text-white">주식</button>
-                <button onclick="switchMenuSub('gamble')" id="sub-gamble-btn" class="flex-1 py-2 text-[10px] font-black rounded-lg text-slate-500">도박</button>
-                <button onclick="switchMenuSub('book')" id="sub-book-btn" class="flex-1 py-2 text-[10px] font-black rounded-lg text-slate-500">도감</button>
+        <div id="view-book" class="hidden py-4 no-scrollbar max-h-[500px] overflow-y-auto">
+            <div class="ad-slot-wrapper">
+                <ins class="kakao_ad_area" style="display:none;" data-ad-unit="DAN-m83Hv6kSAXVZxV8Q" data-ad-width="320" data-ad-height="50"></ins>
+                <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
             </div>
-
-            <!-- 주식 섹션 -->
-            <div id="menu-stock" class="space-y-4">
-                <div class="ad-slot-wrapper">
-                    <ins class="kakao_ad_area" style="display:none;"
-                        data-ad-unit = "DAN-m83Hv6kSAXVZxV8Q"
-                        data-ad-width = "320"
-                        data-ad-height = "50"></ins>
-                    <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
-                </div>
-                <div class="bg-slate-950 p-4 rounded-2xl border border-white/5">
-                    <div class="flex justify-between items-center mb-4">
-                        <div class="flex flex-col">
-                            <span class="text-[8px] text-slate-500 mb-1">오프라인 주가 변동</span>
-                            <div class="flex items-center gap-2">
-                                <span id="offline-status" class="text-[10px] font-black text-red-500">OFF</span>
-                                <button onclick="toggleOffline()" class="w-10 h-5 bg-slate-800 rounded-full relative border border-slate-700">
-                                    <div id="offline-toggle" class="absolute top-0.5 left-0.5 w-3.5 h-3.5 bg-slate-400 rounded-full transition-all"></div>
-                                </button>
-                            </div>
-                        </div>
-                        <select id="stock-select" onchange="onStockChange()" class="bg-slate-800 text-white text-[10px] p-1.5 rounded-lg outline-none border border-slate-700">
-                            <option value="jihoon">지훈웹스 (JIHOON)</option>
-                            <option value="jaeho">재호게임즈 (JAEHO)</option>
-                        </select>
-                    </div>
-                    <div class="text-center mb-4">
-                        <p id="current-price" class="text-2xl font-black text-indigo-400">10,000 G</p>
-                        <p id="price-change-ui" class="text-[10px] font-bold text-slate-500">변동 대기 중...</p>
-                    </div>
-                    <div class="h-24 mb-4 bg-black/20 rounded-lg overflow-hidden">
-                        <canvas id="stock-chart"></canvas>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 text-[10px] mb-4">
-                        <div class="bg-slate-900 p-2 rounded-lg">
-                            <p class="text-slate-500 mb-1">보유 주식</p>
-                            <p id="shares-display" class="font-bold">0 주</p>
-                        </div>
-                        <div class="bg-slate-900 p-2 rounded-lg">
-                            <p class="text-slate-500 mb-1">평가 금액</p>
-                            <p id="total-val-display" class="font-bold text-yellow-500">0 G</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <input id="stock-qty" type="number" value="1" min="1" class="w-1/3 bg-slate-900 border border-slate-700 rounded-lg px-2 text-xs text-center">
-                        <button onclick="tradeStock('buy')" class="flex-1 bg-red-600 py-2 rounded-lg font-black text-xs">매수</button>
-                        <button onclick="tradeStock('sell')" class="flex-1 bg-blue-600 py-2 rounded-lg font-black text-xs">매도</button>
-                    </div>
-                </div>
+            <h3 class="font-black text-sm mb-4 text-indigo-400">나의 통계</h3>
+            <div class="bg-slate-950 p-4 rounded-xl border border-white/5 space-y-2 mb-4">
+                <div class="flex justify-between items-center"><span class="text-xs text-slate-400">최고 강화 레벨</span><span id="max-level-record" class="text-sm font-black text-yellow-500">+0</span></div>
+                <div class="flex justify-between items-center"><span class="text-xs text-slate-400">총 강화 시도</span><span id="total-tries" class="text-sm font-black text-white">0회</span></div>
             </div>
-
-            <!-- 도박 섹션 -->
-            <div id="menu-gamble" class="hidden space-y-4">
-                <div class="ad-slot-wrapper">
-                    <ins class="kakao_ad_area" style="display:none;"
-                        data-ad-unit = "DAN-66Pw3NmJZsUEFECb"
-                        data-ad-width = "320"
-                        data-ad-height = "50"></ins>
-                    <script type="text/javascript" src="//t1.daumcdn.net/kas/static/ba.min.js" async></script>
-                </div>
-                <div class="bg-slate-950 p-6 rounded-2xl border border-white/5 text-center">
-                    <p class="text-[10px] text-slate-400 mb-1">인생 한 방! 홀짝 도박</p>
-                    <p class="text-[9px] text-indigo-500 font-bold mb-6">성공 확률: 49.9% | 배당: 2.0배</p>
-                    <div class="flex items-center gap-2 mb-4 bg-slate-900 p-2 rounded-xl">
-                        <span class="text-xs text-slate-500">배팅액:</span>
-                        <input id="gamble-amt" type="number" placeholder="0" class="flex-1 bg-transparent border-none text-white font-black text-sm outline-none">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <button onclick="playGamble('odd')" class="bg-indigo-600 py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95">홀</button>
-                        <button onclick="playGamble('even')" class="bg-slate-800 py-4 rounded-2xl font-black text-sm shadow-lg active:scale-95 border border-white/5">짝</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 도감 섹션 -->
-            <div id="menu-book" class="hidden space-y-4">
-                <div class="bg-slate-950 p-4 rounded-2xl border border-white/5">
-                    <h4 class="text-xs font-black mb-3">강화 통계</h4>
-                    <div class="space-y-2 text-[10px]">
-                        <div class="flex justify-between"><span class="text-slate-500">최고 강화 레벨</span><span id="max-level" class="text-yellow-500 font-bold">+0</span></div>
-                        <div class="flex justify-between"><span class="text-slate-500">총 강화 시도</span><span id="total-tries" class="font-bold">0회</span></div>
-                    </div>
-                </div>
-                <div id="sell-log" class="space-y-2"></div>
-            </div>
+            <div id="sell-records" class="space-y-2"></div>
         </div>
     </div>
 
+    <!-- 실명 입력 모달 -->
+    <div id="name-modal" class="fixed inset-0 bg-black/80 z-[200] flex items-center justify-center hidden p-6">
+        <div class="bg-slate-900 p-8 rounded-3xl border border-indigo-500/50 w-full max-w-xs text-center">
+            <h2 class="title-font text-xl text-white mb-2">실명 인증</h2>
+            <p class="text-[10px] text-slate-400 mb-6">개발자 이벤트 및 랭킹 관리를 위해 실명을 입력해 주세요.</p>
+            <input id="real-name-input" type="text" placeholder="이름 입력" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm mb-4">
+            <button onclick="submitRealName()" class="w-full bg-indigo-600 py-3 rounded-xl font-black text-sm">인증 및 시작</button>
+        </div>
+    </div>
+
+    <!-- 개발자 부동 메뉴 -->
+    <div id="admin-fab" class="hidden flex flex-col items-end gap-2">
+        <div id="admin-menu" class="hidden bg-slate-900 border border-red-500/50 p-4 rounded-3xl shadow-2xl mb-2 w-64 space-y-3">
+            <p class="text-[10px] text-red-500 font-black">ADMIN CONSOLE</p>
+            <div class="space-y-2">
+                <p class="text-[9px] text-slate-400">유저 골드 지급</p>
+                <select id="admin-target" class="w-full bg-slate-800 text-[10px] p-2 rounded"></select>
+                <div class="flex gap-1">
+                    <input id="admin-gold-amt" type="number" placeholder="금액" class="w-full bg-slate-800 text-[10px] p-2 rounded">
+                    <button onclick="adminGiveGold()" class="bg-red-600 text-[9px] px-2 rounded">지급</button>
+                </div>
+            </div>
+            <hr class="border-slate-800">
+            <div class="space-y-2">
+                <p class="text-[9px] text-slate-400">전체 이벤트 설정</p>
+                <input id="admin-msg" type="text" placeholder="메시지" class="w-full bg-slate-800 text-[10px] p-2 rounded">
+                <div class="grid grid-cols-2 gap-1">
+                    <input id="admin-evt-luck" type="number" placeholder="확률+" class="bg-slate-800 text-[10px] p-2 rounded">
+                    <input id="admin-evt-div" type="number" placeholder="비용n분" class="bg-slate-800 text-[10px] p-2 rounded">
+                </div>
+                <input id="admin-evt-time" type="number" placeholder="시간(분)" class="w-full bg-slate-800 text-[10px] p-2 rounded">
+                <button onclick="adminStartEvent()" class="w-full bg-indigo-600 text-[10px] py-2 rounded font-bold">이벤트 시작</button>
+                <button onclick="adminStopEvent()" class="w-full bg-slate-700 text-[10px] py-1 rounded font-bold">모든 효과 종료</button>
+            </div>
+        </div>
+        <button onclick="toggleAdminMenu()" class="bg-red-600 w-12 h-12 rounded-full shadow-lg flex items-center justify-center font-black text-xs">DEV</button>
+    </div>
+
+    <audio id="snd-hammer" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+    <audio id="snd-success" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3"></audio>
+    <audio id="snd-fail" src="https://assets.mixkit.co/active_storage/sfx/123/123-preview.mp3"></audio>
+
     <script>
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const app = firebase.initializeApp(firebaseConfig);
+        const firebaseConfig = {
+            apiKey: "AIzaSyAejpiSvM6DaPCebOlZ-ktrHkDBMmljD4Q",
+            authDomain: "sowrd-game.firebaseapp.com",
+            projectId: "sowrd-game",
+            storageBucket: "sowrd-game.firebasestorage.app",
+            messagingSenderId: "196203629749",
+            appId: "1:196203629749:web:6eaf9d35fc81b5a13602fc"
+        };
+        firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        const APP_ID = typeof __app_id !== 'undefined' ? __app_id : 'sword-stock-pro-2026';
+        const googleProvider = new firebase.auth.GoogleAuthProvider();
 
-        let state = {
-            gold: 300, level: 0, maxLevel: 0, totalTries: 0,
-            upgrades: { luck: 0, speed: 0 },
-            stocks: {
-                jihoon: { price: 10000, shares: 0, history: [10000] },
-                jaeho: { price: 10000, shares: 0, history: [10000] }
-            },
-            sellHistory: {}, offlineMode: false, lastStockSync: Date.now()
+        const ADMIN_EMAIL = "jihoonwebs@gmail.com";
+        const APP_ID = "sword-master-pro-2026";
+
+        let state = { 
+            user: null, gold: 300, level: 0, maxLevel: 0, totalTries: 0,
+            isWorking: false, upgrades: { luck: 0, speed: 0 }, sellHistory: {},
+            displayName: "GUEST", realName: ""
         };
+        let globalEvent = { luck: 0, div: 1, msg: "", endTime: 0 };
+        const swordNames = ["목검", "철검", "강철검", "장검", "기사검", "명검", "영혼검", "용사검", "전설검", "신화검", "절대검"];
 
-        let user = null;
-        let chart = null;
-
-        async function init() {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await auth.signInWithCustomToken(__initial_auth_token);
-            } else {
-                await auth.signInAnonymously();
-            }
-            
-            auth.onAuthStateChanged(async (u) => {
-                user = u;
-                if (u) {
-                    const docRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('users').doc(u.uid);
-                    
-                    // 유저 데이터 실시간 리스너 (개발자 이벤트 등으로 코인이 변하면 즉시 반영)
-                    docRef.onSnapshot((doc) => {
-                        if (doc.exists) {
-                            const data = doc.data();
-                            const oldGold = state.gold;
-                            state = { ...state, ...data };
-                            
-                            // 코인 증가/감소 알림 (이벤트 감지)
-                            if (data.gold > oldGold) {
-                                showToast(`💰 코인이 충전되었습니다! (+${(data.gold - oldGold).toLocaleString()}G)`, 'success');
-                            }
-                            updateUI();
-                        } else {
-                            // 초기 생성
-                            sync();
-                        }
-                    }, (err) => console.error("Snapshot error:", err));
-
-                    if(state.offlineMode) handleOfflineYield();
-                    startStockLoop();
-                    updateToggleUI();
-                    initLeaderboard();
-                }
+        function switchTab(tab) {
+            ['main', 'shop', 'book'].forEach(t => {
+                document.getElementById(`view-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).classList.remove('active', 'text-slate-500');
+                if(t !== tab) document.getElementById(`tab-${t}`).classList.add('text-slate-500');
             });
+            document.getElementById(`view-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            if(tab === 'book') updateHistoryUI();
         }
 
-        // 실시간 리더보드 리스너
-        function initLeaderboard() {
-            const leaderboardContainer = document.getElementById('coin-leaderboard');
-            db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('users')
-                .onSnapshot((querySnapshot) => {
-                    let players = [];
-                    querySnapshot.forEach((doc) => {
-                        players.push({ id: doc.id, ...doc.data() });
-                    });
-
-                    // 골드 순 정렬 (메모리 필터링)
-                    players.sort((a, b) => b.gold - a.gold);
-
-                    leaderboardContainer.innerHTML = players.slice(0, 5).map((p, index) => `
-                        <div class="leaderboard-item flex justify-between items-center p-3 bg-slate-950 rounded-xl border border-white/5">
-                            <div class="flex items-center gap-3">
-                                <span class="text-[10px] font-black ${index === 0 ? 'text-yellow-400' : 'text-slate-500'} w-4">${index + 1}</span>
-                                <div class="flex flex-col">
-                                    <span class="text-[10px] font-bold ${p.id === user?.uid ? 'text-indigo-400' : 'text-slate-300'}">
-                                        ${p.id === user?.uid ? '나 (YOU)' : '익명의 유저'} 
-                                        ${index === 0 ? '👑' : ''}
-                                    </span>
-                                    <span class="text-[8px] text-slate-500">${p.id.substring(0, 8)}...</span>
-                                </div>
-                            </div>
-                            <span class="text-[10px] font-black text-yellow-500">${p.gold.toLocaleString()} G</span>
-                        </div>
-                    `).join('');
-                }, (err) => {
-                    leaderboardContainer.innerHTML = '<div class="text-center py-4 text-[10px] text-red-500">데이터 로드 실패</div>';
-                });
+        async function handleGoogleLogin() {
+            try { await auth.signInWithPopup(googleProvider); } catch (e) { console.error(e); }
         }
 
-        function handleOfflineYield() {
-            const now = Date.now();
-            const elapsedSec = (now - state.lastStockSync) / 1000;
-            const ticks = Math.floor(elapsedSec / 3);
-            if (ticks > 0) {
-                const limitTicks = Math.min(ticks, 28800); 
-                ['jihoon', 'jaeho'].forEach(id => {
-                    for(let i=0; i<limitTicks; i++) {
-                        state.stocks[id].price = Math.round(state.stocks[id].price * (1 + (Math.random() - 0.5) * 0.08));
-                        if(state.stocks[id].price < 500) state.stocks[id].price = 500;
-                    }
-                });
-                showToast(`오프라인 동안 주가가 변동되었습니다.`, 'success');
-            }
-            state.lastStockSync = now;
-            sync();
-        }
+        async function handleLogout() { try { await auth.signOut(); location.reload(); } catch (e) { console.error(e); } }
 
-        function toggleOffline() {
-            state.offlineMode = !state.offlineMode;
-            updateToggleUI();
-            sync();
-        }
-
-        function updateToggleUI() {
-            const toggle = document.getElementById('offline-toggle');
-            const status = document.getElementById('offline-status');
-            if(!toggle || !status) return;
-            if(state.offlineMode) {
-                toggle.style.left = '22px'; toggle.style.backgroundColor = '#818cf8';
-                status.innerText = 'ON'; status.className = 'text-[10px] font-black text-indigo-500';
-            } else {
-                toggle.style.left = '2px'; toggle.style.backgroundColor = '#94a3b8';
-                status.innerText = 'OFF'; status.className = 'text-[10px] font-black text-red-500';
-            }
-        }
-
-        function startStockLoop() {
-            setInterval(() => {
-                ['jihoon', 'jaeho'].forEach(id => {
-                    const prev = state.stocks[id].price;
-                    const change = (Math.random() - 0.5) * 0.08;
-                    state.stocks[id].price = Math.round(prev * (1 + change));
-                    if(state.stocks[id].price < 500) state.stocks[id].price = 500;
-                    state.stocks[id].history.push(state.stocks[id].price);
-                    if(state.stocks[id].history.length > 20) state.stocks[id].history.shift();
-                });
-                state.lastStockSync = Date.now();
-                updateStockUI();
-                sync();
-            }, 3000);
-        }
-
-        function updateStockUI() {
-            const id = document.getElementById('stock-select').value;
-            const s = state.stocks[id];
-            const cp = document.getElementById('current-price');
-            if(!cp) return;
-            cp.innerText = s.price.toLocaleString() + " G";
-            document.getElementById('shares-display').innerText = s.shares.toLocaleString() + " 주";
-            document.getElementById('total-val-display').innerText = (s.shares * s.price).toLocaleString() + " G";
-            const diff = s.price - s.history[s.history.length-2];
-            const changeUI = document.getElementById('price-change-ui');
-            if(diff > 0) { changeUI.innerText = "▲ " + diff.toLocaleString(); changeUI.className = "text-[10px] font-bold text-red-500"; }
-            else if(diff < 0) { changeUI.innerText = "▼ " + Math.abs(diff).toLocaleString(); changeUI.className = "text-[10px] font-bold text-blue-500"; }
-            if(chart) {
-                chart.data.datasets[0].data = s.history;
-                chart.update('none');
-            }
-        }
-
-        function initChart() {
-            const canvas = document.getElementById('stock-chart');
-            if(!canvas) return;
-            const ctx = canvas.getContext('2d');
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: Array(20).fill(''),
-                    datasets: [{
-                        data: state.stocks.jihoon.history,
-                        borderColor: '#818cf8',
-                        borderWidth: 2,
-                        fill: true,
-                        backgroundColor: 'rgba(129, 140, 248, 0.1)',
-                        tension: 0.4,
-                        pointRadius: 0
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { x: { display: false }, y: { display: false } },
-                    plugins: { legend: { display: false } }
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                state.user = user;
+                const userRef = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('users').doc(user.uid);
+                const doc = await userRef.get();
+                
+                if (doc.exists) {
+                    Object.assign(state, doc.data());
+                } else {
+                    const initialData = { 
+                        uid: user.uid, displayName: user.displayName || "GUEST", gold: 300, 
+                        level: 0, maxLevel: 0, totalTries: 0, upgrades: { luck: 0, speed: 0 }, 
+                        sellHistory: {}, realName: "", lastUpdated: Date.now()
+                    };
+                    await userRef.set(initialData);
+                    Object.assign(state, initialData);
                 }
-            });
-        }
 
-        function handleEnhance() {
-            const cost = Math.floor(10 * Math.pow(1.5, state.level));
-            if(state.gold < cost) return showToast('골드가 부족합니다.', 'error');
-            state.gold -= cost;
-            state.totalTries++;
-            const chance = Math.max(1, 100 - (state.level * 7)) + state.upgrades.luck;
-            if(Math.random() * 100 <= chance) {
-                state.level++;
-                if(state.level > state.maxLevel) state.maxLevel = state.level;
-                showToast('강화 성공!', 'success');
-            } else {
-                if(state.level >= 5) state.level = 0;
-                else if(state.level > 0) state.level--;
-                showToast('강화 실패...', 'error');
-            }
-            updateUI();
-            sync();
-        }
+                if (!state.realName) {
+                    document.getElementById('name-modal').classList.remove('hidden');
+                }
 
-        function handleSell() {
-            if(state.level === 0) return;
-            const price = Math.floor(25 * Math.pow(1.6, state.level));
-            state.gold += price;
-            state.sellHistory[state.level] = (state.sellHistory[state.level] || 0) + 1;
-            state.level = 0;
-            updateUI();
-            sync();
-        }
+                if (user.email === ADMIN_EMAIL) {
+                    document.getElementById('admin-fab').classList.remove('hidden');
+                    loadAdminUserList();
+                }
 
-        function playGamble(pick) {
-            const amt = parseInt(document.getElementById('gamble-amt').value);
-            if(isNaN(amt) || amt <= 0) return showToast('배팅액을 입력하세요.', 'error');
-            if(state.gold < amt) return showToast('골드가 부족합니다.', 'error');
-            state.gold -= amt;
-            if(Math.random() < 0.499) {
-                const prize = amt * 2;
-                state.gold += prize;
-                showToast(`축하합니다! ${prize.toLocaleString()}G 당첨!`, 'success');
-            } else {
-                showToast('꽝! 다음 기회에...', 'error');
-            }
-            updateUI();
-            sync();
-        }
-
-        function tradeStock(type) {
-            const id = document.getElementById('stock-select').value;
-            const qty = parseInt(document.getElementById('stock-qty').value);
-            if(isNaN(qty) || qty <= 0) return;
-            if(type === 'buy') {
-                const cost = state.stocks[id].price * qty;
-                if(state.gold >= cost) {
-                    state.gold -= cost;
-                    state.stocks[id].shares += qty;
-                    showToast('매수 완료', 'success');
-                } else showToast('골드 부족', 'error');
-            } else {
-                if(state.stocks[id].shares >= qty) {
-                    state.gold += state.stocks[id].price * qty;
-                    state.stocks[id].shares -= qty;
-                    showToast('매도 완료', 'success');
-                } else showToast('보유 주식 부족', 'error');
-            }
-            updateUI();
-            updateStockUI();
-            sync();
-        }
-
-        function upgradeStat(type) {
-            const cost = type === 'luck' ? Math.floor(100 * Math.pow(1.6, state.upgrades.luck)) : Math.floor(150 * Math.pow(1.7, state.upgrades.speed));
-            if(state.gold >= cost) {
-                state.gold -= cost;
-                state.upgrades[type]++;
+                listenGlobalEvent();
+                updateLoginUI(user);
                 updateUI();
-                sync();
             }
+        });
+
+        async function submitRealName() {
+            const name = document.getElementById('real-name-input').value.trim();
+            if(!name) return;
+            state.realName = name;
+            state.displayName = name;
+            document.getElementById('name-modal').classList.add('hidden');
+            await syncData();
+            updateLoginUI(state.user);
+            if(state.user.email === ADMIN_EMAIL) loadAdminUserList();
+        }
+
+        function listenGlobalEvent() {
+            db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('system').doc('event')
+            .onSnapshot(doc => {
+                if(doc.exists) {
+                    globalEvent = doc.data();
+                    const now = Date.now();
+                    const banner = document.getElementById('event-banner');
+                    const text = document.getElementById('event-text');
+                    
+                    if(globalEvent.endTime > now) {
+                        banner.style.display = 'block';
+                        text.innerText = globalEvent.msg || "특별 이벤트가 시작되었습니다!";
+                    } else {
+                        banner.style.display = 'none';
+                        globalEvent = { luck: 0, div: 1, msg: "", endTime: 0 };
+                    }
+                    updateUI();
+                }
+            }, (err) => console.log("Event listen error"));
+        }
+
+        async function loadAdminUserList() {
+            const snapshot = await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('users').get();
+            const select = document.getElementById('admin-target');
+            select.innerHTML = '<option value="">대상 유저 선택</option>';
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                const opt = document.createElement('option');
+                opt.value = doc.id;
+                opt.innerText = `${d.realName || d.displayName} (${d.gold.toLocaleString()}G)`;
+                select.appendChild(opt);
+            });
+        }
+
+        function toggleAdminMenu() {
+            document.getElementById('admin-menu').classList.toggle('hidden');
+            if(!document.getElementById('admin-menu').classList.contains('hidden')) loadAdminUserList();
+        }
+
+        async function adminGiveGold() {
+            const uid = document.getElementById('admin-target').value;
+            const amt = parseInt(document.getElementById('admin-gold-amt').value);
+            if(!uid || isNaN(amt)) return;
+            const ref = db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('users').doc(uid);
+            const doc = await ref.get();
+            if(doc.exists) {
+                const newGold = doc.data().gold + amt;
+                await ref.update({ gold: newGold });
+                if(uid === state.user.uid) { state.gold = newGold; updateUI(); }
+                alert(`${d.realName || d.displayName}님에게 ${amt}G 지급 완료`);
+                loadAdminUserList();
+            }
+        }
+
+        async function adminStartEvent() {
+            const msg = document.getElementById('admin-msg').value;
+            const luck = parseFloat(document.getElementById('admin-evt-luck').value) || 0;
+            const div = parseFloat(document.getElementById('admin-evt-div').value) || 1;
+            const time = parseInt(document.getElementById('admin-evt-time').value) || 10;
+            await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('system').doc('event').set({
+                msg, luck, div, endTime: Date.now() + (time * 60000)
+            });
+            alert('이벤트가 성공적으로 등록되었습니다.');
+        }
+
+        async function adminStopEvent() {
+            await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('system').doc('event').set({
+                msg: "", luck: 0, div: 1, endTime: 0
+            });
+            alert('진행 중인 모든 이벤트가 종료되었습니다.');
+        }
+
+        function updateLoginUI(user) {
+            document.getElementById('login-btn').classList.add('hidden');
+            document.getElementById('logout-btn').classList.remove('hidden');
+            const photo = document.getElementById('user-photo');
+            if (user.photoURL) {
+                photo.src = user.photoURL; photo.classList.remove('hidden');
+                document.getElementById('default-icon').classList.add('hidden');
+            }
+            document.getElementById('user-display-name').innerText = state.realName || state.displayName || "GUEST";
         }
 
         function updateUI() {
-            document.getElementById('gold-display').innerText = state.gold.toLocaleString() + " G";
+            document.getElementById('gold-display').innerText = Math.floor(state.gold).toLocaleString() + " G";
             document.getElementById('sword-level').innerText = `+${state.level} ENHANCED`;
-            document.getElementById('chance-display').innerText = (Math.max(1, 100 - (state.level * 7)) + state.upgrades.luck).toFixed(1) + "%";
-            document.getElementById('cost-display').innerText = Math.floor(10 * Math.pow(1.5, state.level)).toLocaleString();
-            document.getElementById('sell-display').innerText = Math.floor(25 * Math.pow(1.6, state.level)).toLocaleString();
-            document.getElementById('max-level').innerText = `+${state.maxLevel}`;
-            document.getElementById('total-tries').innerText = `${state.totalTries}회`;
-            document.getElementById('price-luck').innerText = Math.floor(100 * Math.pow(1.6, state.upgrades.luck)).toLocaleString();
-            document.getElementById('price-speed').innerText = Math.floor(150 * Math.pow(1.7, state.upgrades.speed)).toLocaleString();
-            document.getElementById('stat-luck').innerText = `확률 보너스: +${state.upgrades.luck}%`;
-            document.getElementById('stat-speed').innerText = `속도 단축: -${(state.upgrades.speed * 0.1).toFixed(1)}초`;
+            document.getElementById('sword-name').innerText = swordNames[Math.min(Math.floor(state.level/5), swordNames.length-1)];
             
-            const log = document.getElementById('sell-log');
-            if(log) {
-                log.innerHTML = Object.entries(state.sellHistory).map(([lvl, count]) => `
-                    <div class="flex justify-between text-[10px] bg-slate-900 p-2 rounded border border-white/5">
-                        <span class="text-slate-400">+${lvl} 강화검</span>
-                        <span class="font-bold">${count}회 판매</span>
-                    </div>
-                `).join('');
+            const isEvtActive = globalEvent.endTime > Date.now();
+            const evtLuck = (isEvtActive && state.user) ? globalEvent.luck : 0;
+            const evtDiv = (isEvtActive && state.user) ? globalEvent.div : 1;
+
+            let baseCost = Math.floor(10 * Math.pow(1.5, state.level));
+            let finalCost = Math.max(1, Math.floor(baseCost / evtDiv));
+            let baseChance = Math.max(1, 100 - (state.level * 6.5)) + (state.upgrades.luck || 0);
+            let finalChance = baseChance + evtLuck;
+
+            document.getElementById('cost-display').innerText = finalCost.toLocaleString();
+            document.getElementById('chance-display').innerText = `${Math.min(100, finalChance).toFixed(1)}%`;
+            document.getElementById('sell-display').innerText = Math.floor(25 * Math.pow(1.55, state.level)).toLocaleString();
+            document.getElementById('max-level-record').innerText = `+${state.maxLevel}`;
+            document.getElementById('total-tries').innerText = `${state.totalTries}회`;
+            document.getElementById('price-luck').innerText = Math.floor(100 * Math.pow(1.6, state.upgrades.luck || 0)).toLocaleString();
+            document.getElementById('price-speed').innerText = Math.floor(150 * Math.pow(1.7, state.upgrades.speed || 0)).toLocaleString();
+            document.getElementById('stat-luck').innerText = `확률 보너스: +${state.upgrades.luck || 0}%`;
+            document.getElementById('stat-speed').innerText = `속도 단축: -${((state.upgrades.speed || 0) * 0.1).toFixed(1)}초`;
+        }
+
+        function upgradeStat(type) {
+            const currentVal = state.upgrades[type] || 0;
+            const price = type === 'luck' ? Math.floor(100 * Math.pow(1.6, currentVal)) : Math.floor(150 * Math.pow(1.7, currentVal));
+            if(type === 'speed' && currentVal >= 8) return;
+            if(state.gold >= price) {
+                state.gold -= price; state.upgrades[type] = currentVal + 1;
+                updateUI(); syncData();
             }
         }
 
-        async function sync() {
-            if(!user) return;
-            try {
-                await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('users').doc(user.uid).set(state, {merge: true});
-            } catch(e) {}
+        function updateHistoryUI() {
+            const container = document.getElementById('sell-records');
+            const history = state.sellHistory || {};
+            const keys = Object.keys(history).sort((a,b) => b-a);
+            if(keys.length === 0) {
+                container.innerHTML = '<p class="text-[10px] text-slate-600 text-center py-10">판매 기록이 없습니다.</p>';
+                return;
+            }
+            container.innerHTML = keys.map(lvl => `<div class="bg-slate-950/50 p-3 rounded-xl border border-white/5 flex justify-between items-center mb-2"><span class="text-[11px] font-bold text-slate-200">+${lvl} 강화검</span><span class="text-[10px] text-indigo-400 font-black">${history[lvl]}회 판매</span></div>`).join('');
         }
 
-        function showToast(m, t) {
-            const c = document.getElementById('toast-container');
-            const d = document.createElement('div');
-            d.className = `toast ${t}`;
-            d.innerText = m;
-            c.appendChild(d);
-            setTimeout(() => d.remove(), 2500);
+        async function syncData() {
+            if (state.user) {
+                const { user, isWorking, ...saveData } = state;
+                await db.collection('artifacts').doc(APP_ID).collection('public').doc('data').collection('users').doc(state.user.uid).set(saveData, { merge: true });
+            }
         }
 
-        function switchTab(t) {
-            ['main', 'shop', 'menu'].forEach(v => document.getElementById('view-'+v).classList.add('hidden'));
-            ['main', 'shop', 'menu'].forEach(v => document.getElementById('tab-'+v).classList.remove('active', 'text-slate-500'));
-            document.getElementById('view-'+t).classList.remove('hidden');
-            document.getElementById('tab-'+t).classList.add('active');
-            if(t === 'menu' && !chart) { initChart(); updateStockUI(); }
+        function handleEnhance() {
+            if (state.isWorking) return;
+            const isEvtActive = globalEvent.endTime > Date.now();
+            const evtDiv = (isEvtActive && state.user) ? globalEvent.div : 1;
+            let cost = Math.max(1, Math.floor(Math.floor(10 * Math.pow(1.5, state.level)) / evtDiv));
+            
+            if (state.gold < cost) return;
+            state.gold -= cost; state.isWorking = true; state.totalTries++;
+            updateUI();
+            document.getElementById('snd-hammer').play();
+            document.getElementById('progress-container').classList.remove('hidden');
+            document.getElementById('hammer-icon').classList.remove('hidden');
+            const bar = document.getElementById('progress-bar');
+            bar.style.transition = 'none'; bar.style.width = '0%';
+            const workTime = Math.max(200, 1000 - ((state.upgrades.speed || 0) * 100));
+            setTimeout(() => { bar.style.transition = `width ${workTime}ms linear`; bar.style.width = '100%'; }, 50);
+            setTimeout(() => {
+                state.isWorking = false;
+                document.getElementById('progress-container').classList.add('hidden');
+                document.getElementById('hammer-icon').classList.add('hidden');
+                const evtLuck = (isEvtActive && state.user) ? globalEvent.luck : 0;
+                let chance = Math.max(1, 100 - (state.level * 6.5)) + (state.upgrades.luck || 0) + evtLuck;
+                const card = document.getElementById('sword-card');
+                if (Math.random() * 100 <= chance) {
+                    state.level++;
+                    if(state.level > state.maxLevel) state.maxLevel = state.level;
+                    document.getElementById('snd-success').play();
+                    card.classList.add('success-glow');
+                    setTimeout(() => card.classList.remove('success-glow'), 800);
+                } else {
+                    if (state.level >= 10) state.level = 0; else if (state.level >= 3) state.level--;
+                    document.getElementById('snd-fail').play();
+                    card.classList.add('fail-glow');
+                    setTimeout(() => card.classList.remove('fail-glow'), 800);
+                }
+                updateUI(); syncData();
+            }, workTime + 50);
         }
 
-        function switchMenuSub(s) {
-            ['stock', 'gamble', 'book'].forEach(v => document.getElementById('menu-'+v).classList.add('hidden'));
-            ['stock', 'gamble', 'book'].forEach(v => document.getElementById('sub-'+v+'-btn').classList.remove('bg-indigo-600', 'text-white'));
-            document.getElementById('menu-'+s).classList.remove('hidden');
-            document.getElementById('sub-'+s+'-btn').classList.add('bg-indigo-600', 'text-white');
-            if(s === 'stock') updateStockUI();
+        function handleSell() {
+            if (state.level === 0 || state.isWorking) return;
+            const price = Math.floor(25 * Math.pow(1.55, state.level));
+            if (!state.sellHistory) state.sellHistory = {};
+            state.sellHistory[state.level] = (state.sellHistory[state.level] || 0) + 1;
+            state.gold += price; state.level = 0; 
+            updateUI(); syncData();
         }
-
-        function onStockChange() { updateStockUI(); }
-        window.onload = init;
     </script>
 </body>
 </html>
